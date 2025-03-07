@@ -1,6 +1,8 @@
 
 export type ItemType = 'jewelry' | 'coin' | 'bar' | 'scrap' | 'other';
 export type KaratValue = 10 | 14 | 18 | 22 | 24;
+export type ItemCategory = 'Bars' | 'Coins' | 'Jewelry';
+export type RegisterType = 'Wholesale' | 'Retail';
 
 export interface InventoryItem {
   id: string;
@@ -20,6 +22,15 @@ export interface InventoryItem {
   notes?: string;
   isAvailable: boolean;
   tags?: string[];
+  
+  // Additional properties needed by the components
+  category?: ItemCategory;
+  barcode?: string;
+  quantity?: number;
+  costCurrency?: string;
+  updatedAt?: Date;
+  createdAt?: Date;
+  equivalent24k?: number;
 }
 
 export interface InventoryRegister {

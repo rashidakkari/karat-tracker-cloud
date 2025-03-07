@@ -1,5 +1,5 @@
 
-import { AppLayout } from "@/components/layout/AppLayout";
+import AppLayout from "@/components/layout/AppLayout";
 import ReportDashboard from "@/components/reports/ReportDashboard";
 
 const Reports = () => {

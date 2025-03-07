@@ -1,5 +1,5 @@
 
-import { AuthScreen } from "@/components/auth/AuthScreen";
+import AuthScreen from "@/components/auth/AuthScreen";
 
 const Auth = () => {
   return <AuthScreen />;

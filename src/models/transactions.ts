@@ -1,16 +1,34 @@
 
 import { InventoryItem } from './inventory';
 
-export type TransactionType = 'sale' | 'purchase' | 'exchange';
-export type PaymentMethod = 'cash' | 'credit_card' | 'bank_transfer' | 'check' | 'other';
-export type TransactionStatus = 'completed' | 'pending' | 'cancelled';
+export type TransactionType = 'sale' | 'purchase' | 'exchange' | 'Buy' | 'Sell' | 'Expense' | 'Repair';
+export type PaymentMethod = 'cash' | 'credit_card' | 'bank_transfer' | 'check' | 'other' | 'Cash' | 'Gold' | 'Mixed' | 'Credit' | 'Bank Transfer' | 'Other';
+export type TransactionStatus = 'completed' | 'pending' | 'cancelled' | 'Completed' | 'Pending';
 
 export interface TransactionItem {
+  id?: string;
   inventoryItem: InventoryItem;
+  inventoryItemId?: string;
   quantity: number;
   pricePerUnit: number;
   discount?: number;
   subtotal: number;
+  name?: string;
+  category?: string;
+  purity?: string;
+  weight?: number;
+  weightUnit?: string;
+  unitPrice?: number;
+  totalPrice?: number;
+  currency?: string;
+}
+
+export interface Payment {
+  method: string;
+  amount: number;
+  currency: string;
+  goldWeight?: number;
+  goldPurity?: string;
 }
 
 export interface Transaction {
@@ -18,6 +36,8 @@ export interface Transaction {
   type: TransactionType;
   customerName: string;
   customerContact?: string;
+  customerPhone?: string;
+  registerType?: string;
   date: string; // ISO date string
   items: TransactionItem[];
   totalAmount: number;
@@ -27,6 +47,17 @@ export interface Transaction {
   status: TransactionStatus;
   notes?: string;
   profit?: number; // For sale transactions
+  
+  // Additional properties needed by components
+  payments?: Payment[];
+  balance?: number;
+  currency?: string;
+  spotPriceAtTransaction?: number;
+  commission?: number;
+  commissionType?: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  createdBy?: string;
 }
 
 export interface Expense {
