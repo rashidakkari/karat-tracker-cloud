@@ -1,77 +1,101 @@
 
-import { format } from "date-fns";
-
-// Format currency with symbol
+/**
+ * Formats a number as currency
+ */
 export const formatCurrency = (
   amount: number,
-  currency: "USD" | "EUR" | "GBP" | "CHF" = "USD",
-  minimumFractionDigits = 2,
-  maximumFractionDigits = 2
+  currency: string = 'USD',
+  locale: string = 'en-US'
 ): string => {
-  const symbols = {
-    USD: "$",
-    EUR: "€",
-    GBP: "£",
-    CHF: "CHF",
-  };
-
-  return `${symbols[currency]}${amount.toLocaleString(undefined, {
-    minimumFractionDigits,
-    maximumFractionDigits,
-  })}`;
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: currency,
+  }).format(amount);
 };
 
-// Format weight with unit
+/**
+ * Formats a weight with unit
+ */
 export const formatWeight = (
   weight: number,
-  unit: "g" | "kg" | "oz" = "g",
-  minimumFractionDigits = 2,
-  maximumFractionDigits = 3
+  unit: string = 'g',
+  precision: number = 2
 ): string => {
-  return `${weight.toLocaleString(undefined, {
-    minimumFractionDigits,
-    maximumFractionDigits,
-  })} ${unit}`;
+  return `${weight.toFixed(precision)} ${unit}`;
 };
 
-// Format percentage
+/**
+ * Formats a date
+ */
+export const formatDate = (
+  date: string | Date,
+  locale: string = 'en-US',
+  options: Intl.DateTimeFormatOptions = { 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric' 
+  }
+): string => {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return new Intl.DateTimeFormat(locale, options).format(dateObj);
+};
+
+/**
+ * Formats a percentage
+ */
 export const formatPercentage = (
-  percentage: number,
-  minimumFractionDigits = 2,
-  maximumFractionDigits = 2
+  value: number,
+  precision: number = 2
 ): string => {
-  return `${percentage.toLocaleString(undefined, {
-    minimumFractionDigits,
-    maximumFractionDigits,
-  })}%`;
+  return `${(value * 100).toFixed(precision)}%`;
 };
 
-// Format date and time
-export const formatDateTime = (dateTime: string | Date, formatStr = "MMM d, yyyy h:mm a"): string => {
-  return format(new Date(dateTime), formatStr);
+/**
+ * Shortens a number (e.g., 1,000 -> 1K)
+ */
+export const shortenNumber = (
+  num: number,
+  precision: number = 1
+): string => {
+  const map = [
+    { suffix: 'T', threshold: 1e12 },
+    { suffix: 'B', threshold: 1e9 },
+    { suffix: 'M', threshold: 1e6 },
+    { suffix: 'K', threshold: 1e3 },
+    { suffix: '', threshold: 1 },
+  ];
+
+  const found = map.find(x => Math.abs(num) >= x.threshold);
+  if (found) {
+    const formatted = (num / found.threshold).toFixed(precision);
+    return formatted + found.suffix;
+  }
+
+  return num.toString();
 };
 
-// Format date only
-export const formatDate = (date: string | Date, formatStr = "MMM d, yyyy"): string => {
-  return format(new Date(date), formatStr);
+/**
+ * Formats a karat value
+ */
+export const formatKarat = (
+  karat: number
+): string => {
+  return `${karat}K`;
 };
 
-// Format time only
-export const formatTime = (time: string | Date, formatStr = "h:mm a"): string => {
-  return format(new Date(time), formatStr);
-};
-
-// Format purity for display
-export const formatPurity = (purity: string): string => {
-  return purity;
-};
-
-// Generate a truncated ID for display
-export const formatId = (id: string, length = 8): string => {
-  return id.substring(0, length);
-};
-
-// Convert a number to a fixed number of decimal places for display
-export const toFixed = (num: number, decimals = 2): string => {
-  return num.toFixed(decimals);
+/**
+ * Format a phone number
+ */
+export const formatPhoneNumber = (
+  phoneNumber: string,
+  format: string = 'xxx-xxx-xxxx'
+): string => {
+  let formatted = format;
+  const digits = phoneNumber.replace(/\D/g, '');
+  
+  for (let i = 0; i < digits.length && i < format.replace(/[^x]/g, '').length; i++) {
+    formatted = formatted.replace('x', digits[i]);
+  }
+  
+  return formatted;
 };

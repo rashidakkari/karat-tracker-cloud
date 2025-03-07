@@ -1,92 +1,56 @@
 
-import { GoldPurity, WeightUnit, CurrencyCode } from "../utils/goldCalculations";
+import { InventoryItem } from './inventory';
 
-export type TransactionType = 'Buy' | 'Sell' | 'Exchange' | 'Repair' | 'Expense';
-export type PaymentMethod = 'Cash' | 'Gold' | 'Mixed' | 'Credit' | 'Bank Transfer' | 'Other';
-
-export interface Payment {
-  method: PaymentMethod;
-  amount: number;
-  currency: CurrencyCode;
-  // For gold payments
-  goldWeight?: number;
-  goldPurity?: GoldPurity;
-  goldUnit?: WeightUnit;
-  // For tracking partial payments
-  isPending?: boolean;
-  dueDate?: Date;
-  reference?: string;
-}
+export type TransactionType = 'sale' | 'purchase' | 'exchange';
+export type PaymentMethod = 'cash' | 'credit_card' | 'bank_transfer' | 'check' | 'other';
+export type TransactionStatus = 'completed' | 'pending' | 'cancelled';
 
 export interface TransactionItem {
-  id: string;
-  inventoryItemId?: string;
-  name: string;
-  description?: string;
-  category: string;
-  purity: GoldPurity;
-  weight: number;
-  weightUnit: WeightUnit;
+  inventoryItem: InventoryItem;
   quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-  currency: CurrencyCode;
-  exchangeRate?: number;
+  pricePerUnit: number;
+  discount?: number;
+  subtotal: number;
 }
 
 export interface Transaction {
   id: string;
   type: TransactionType;
   customerName: string;
-  customerPhone?: string;
-  customerEmail?: string;
-  registerType: 'Wholesale' | 'Retail';
+  customerContact?: string;
+  date: string; // ISO date string
   items: TransactionItem[];
-  payments: Payment[];
   totalAmount: number;
-  balance: number; // Remaining amount after payments
-  currency: CurrencyCode;
-  spotPriceAtTransaction: number;
-  commission: number;
-  commissionType: 'Percentage' | 'Fixed' | 'PerGram';
+  tax?: number;
+  discount?: number;
+  paymentMethod: PaymentMethod;
+  status: TransactionStatus;
   notes?: string;
-  receipt?: string;
-  status: 'Completed' | 'Pending' | 'Cancelled';
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy: string;
-  updatedBy?: string;
+  profit?: number; // For sale transactions
 }
 
 export interface Expense {
   id: string;
-  date: Date;
   category: string;
   amount: number;
-  currency: CurrencyCode;
-  paymentMethod: PaymentMethod;
+  date: string; // ISO date string
   description: string;
-  receipt?: string;
-  createdAt: Date;
-  updatedBy?: string;
+  paymentMethod: PaymentMethod;
+  recurring?: boolean;
+  recurringPeriod?: 'daily' | 'weekly' | 'monthly' | 'yearly';
 }
 
 export interface Debt {
   id: string;
-  transactionId?: string;
-  type: 'Customer' | 'Factory';
-  entityName: string;
-  entityContact?: string;
+  personName: string;
+  contactInfo?: string;
   amount: number;
-  currency: CurrencyCode;
-  // For gold debt
-  goldWeight?: number;
-  goldPurity?: GoldPurity;
-  goldUnit?: WeightUnit;
-  dueDate?: Date;
-  status: 'Outstanding' | 'Partially Paid' | 'Paid' | 'Overdue';
-  payments: Payment[];
-  notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  date: string; // ISO date string
+  dueDate?: string; // ISO date string
+  description: string;
+  status: 'pending' | 'partially_paid' | 'paid';
+  partialPayments?: {
+    date: string;
+    amount: number;
+  }[];
 }

@@ -1,138 +1,110 @@
 
-// Gold purity conversion utilities and price calculations
+export type WeightUnit = 'g' | 'oz' | 'tola' | 'baht';
 
-export type GoldPurity = '999.9' | '995' | '22K' | '21K' | '18K' | '14K' | '9K';
-export type WeightUnit = 'g' | 'kg' | 'oz';
-export type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'CHF';
-
-// Purity factor mappings
-export const purityFactors = {
-  '999.9': 0.9999,
-  '995': 0.995,
-  '22K': {
-    buying: 0.900,
-    selling: 0.916 / 0.995
-  },
-  '21K': {
-    buying: 0.865,
-    selling: 0.875 / 0.995
-  },
-  '18K': {
-    buying: 0.74,
-    selling: 0.75 / 0.995
-  },
-  '14K': {
-    buying: 0.570,
-    selling: 0.583 / 0.995
-  },
-  '9K': {
-    buying: 0.360,
-    selling: 0.375 / 0.995
-  }
+// Conversion factors to grams
+const WEIGHT_CONVERSION_TO_GRAMS = {
+  g: 1,
+  oz: 31.1035, // Troy ounce
+  tola: 11.6638, // Indian tola
+  baht: 15.244  // Thai baht
 };
 
-// Convert weight to grams based on unit
-export const convertToGrams = (weight: number, unit: WeightUnit): number => {
-  switch (unit) {
-    case 'kg':
-      return weight * 1000;
-    case 'oz':
-      return weight * 31.1035;
-    case 'g':
-    default:
-      return weight;
-  }
+// Purity by karat
+export const KARAT_TO_PURITY = {
+  24: 0.999,
+  22: 0.916,
+  18: 0.75,
+  14: 0.585,
+  10: 0.417
 };
 
-// Convert weight from grams to specified unit
-export const convertFromGrams = (weightInGrams: number, targetUnit: WeightUnit): number => {
-  switch (targetUnit) {
-    case 'kg':
-      return weightInGrams / 1000;
-    case 'oz':
-      return weightInGrams / 31.1035;
-    case 'g':
-    default:
-      return weightInGrams;
-  }
+/**
+ * Convert weight between different units
+ */
+export const convertWeight = (
+  weight: number, 
+  fromUnit: WeightUnit, 
+  toUnit: WeightUnit
+): number => {
+  // Convert to grams first
+  const weightInGrams = weight * WEIGHT_CONVERSION_TO_GRAMS[fromUnit];
+  // Then convert to target unit
+  return weightInGrams / WEIGHT_CONVERSION_TO_GRAMS[toUnit];
 };
 
-// Convert gold weight to 24K equivalent (995 standard)
-export const convertTo24K = (weight: number, purity: GoldPurity): number => {
-  if (purity === '999.9') {
-    return weight / 0.995; // Convert 999.9 to 995 standard
-  }
+/**
+ * Calculate pure gold content
+ */
+export const calculatePureGoldContent = (
+  weight: number, 
+  purity: number, 
+  unit: WeightUnit = 'g'
+): number => {
+  return weight * purity;
+};
+
+/**
+ * Calculate gold value based on weight, purity, and spot price
+ */
+export const calculateGoldValue = (
+  weight: number, 
+  purity: number, 
+  spotPricePerGram: number, 
+  unit: WeightUnit = 'g'
+): number => {
+  // First convert to grams if necessary
+  const weightInGrams = unit === 'g' ? weight : convertWeight(weight, unit, 'g');
   
-  if (purity === '995') {
-    return weight;
-  }
-  
-  // For karat gold, use the selling factor for true 24K equivalent
-  const purityFactor = typeof purityFactors[purity] === 'object' 
-    ? (purityFactors[purity] as {selling: number}).selling 
-    : (purityFactors[purity] as number);
-    
-  return weight * purityFactor;
+  // Calculate pure gold content and multiply by spot price
+  return weightInGrams * purity * spotPricePerGram;
 };
 
-// Calculate gold bar buying price
-export const calculateBarBuyingPrice = (
-  spotPrice: number,
+/**
+ * Calculate retail price with markup
+ */
+export const calculateRetailPrice = (
+  baseValue: number, 
+  markupPercentage: number
+): number => {
+  return baseValue * (1 + markupPercentage / 100);
+};
+
+/**
+ * Convert between karat and purity
+ */
+export const karatToPurity = (karat: number): number => {
+  return karat / 24;
+};
+
+export const purityToKarat = (purity: number): number => {
+  return Math.round(purity * 24);
+};
+
+/**
+ * Calculate spot price per gram from price per ounce
+ */
+export const spotPricePerGram = (pricePerOunce: number): number => {
+  return pricePerOunce / WEIGHT_CONVERSION_TO_GRAMS.oz;
+};
+
+/**
+ * Calculate the melt value of gold items
+ */
+export const calculateMeltValue = (
   weight: number,
-  purity: '999.9' | '995',
-  commission: number = 0
+  purity: number,
+  spotPricePerGram: number,
+  unit: WeightUnit = 'g'
 ): number => {
-  const factor = purity === '999.9' ? 32.15 : 31.99;
-  return (spotPrice * factor / 1000 * weight) + commission;
+  return calculateGoldValue(weight, purity, spotPricePerGram, unit);
 };
 
-// Calculate gold bar selling price
-export const calculateBarSellingPrice = (
-  spotPrice: number,
-  weight: number,
-  purity: '999.9' | '995',
-  commission: number = 0
+/**
+ * Calculate estimated profit
+ */
+export const calculateProfit = (
+  sellingPrice: number,
+  costPrice: number
 ): number => {
-  const factor = purity === '999.9' ? 32.15 : 31.99;
-  return (spotPrice * factor / 1000 * weight) + commission;
-};
-
-// Calculate jewelry buying price
-export const calculateJewelryBuyingPrice = (
-  spotPrice: number,
-  weight: number,
-  purity: GoldPurity,
-  commission: number = 0
-): number => {
-  if (purity === '999.9' || purity === '995') {
-    return calculateBarBuyingPrice(spotPrice, weight, purity, commission);
-  }
-  
-  const purityFactor = (purityFactors[purity] as {buying: number}).buying;
-  return (spotPrice * 31.99 / 1000 * weight * purityFactor) + commission;
-};
-
-// Calculate jewelry selling price with per-gram commission
-export const calculateJewelrySellingPrice = (
-  spotPrice: number,
-  weight: number,
-  purity: GoldPurity,
-  commissionPerGram: number = 0
-): number => {
-  if (purity === '999.9' || purity === '995') {
-    return (spotPrice * 32.15 / 1000 * weight) + (weight * commissionPerGram);
-  }
-  
-  const purityFactor = (purityFactors[purity] as {selling: number}).selling;
-  return (spotPrice * 32.15 / 1000 * weight * purityFactor) + (weight * commissionPerGram);
-};
-
-// Currency conversion (assuming base is USD)
-export const convertCurrency = (
-  amountUSD: number,
-  targetCurrency: CurrencyCode,
-  exchangeRates: Record<CurrencyCode, number>
-): number => {
-  if (targetCurrency === 'USD') return amountUSD;
-  return amountUSD * exchangeRates[targetCurrency];
+  return sellingPrice - costPrice;
 };

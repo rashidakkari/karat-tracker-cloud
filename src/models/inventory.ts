@@ -1,43 +1,30 @@
 
-import { GoldPurity, WeightUnit } from "../utils/goldCalculations";
-
-export type ItemCategory = 'Bars' | 'Coins' | 'Jewelry';
+export type ItemType = 'jewelry' | 'coin' | 'bar' | 'scrap' | 'other';
+export type KaratValue = 10 | 14 | 18 | 22 | 24;
 
 export interface InventoryItem {
   id: string;
-  barcode?: string;
+  itemType: ItemType;
   name: string;
-  category: ItemCategory;
-  purity: GoldPurity;
+  description?: string;
   weight: number;
-  weightUnit: WeightUnit;
-  quantity: number;
+  weightUnit: 'g' | 'oz' | 'tola' | 'baht';
+  karat: KaratValue;
+  purity: number; // Decimal purity (e.g., 0.999 for 24k, 0.75 for 18k)
   costPrice: number;
-  costCurrency: string;
-  location?: string;
+  sellingPrice?: number;
   supplier?: string;
+  dateAcquired: string; // ISO date string
+  location: string;
+  imageUrl?: string;
   notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  image?: string;
+  isAvailable: boolean;
+  tags?: string[];
 }
-
-export type RegisterType = 'Wholesale' | 'Retail';
 
 export interface InventoryRegister {
-  type: RegisterType;
+  id: string;
+  name: string;
   items: InventoryItem[];
+  lastUpdated: string; // ISO date string
 }
-
-// Helper function to calculate total 24K equivalent for an item
-export const calculateItemValue24K = (item: InventoryItem): number => {
-  // This logic should use the goldCalculations utility functions
-  // to convert the item's weight to 24K equivalent based on purity
-  // Implementation will go here
-  return 0;
-};
-
-// Helper function to calculate total 24K equivalent for a register
-export const calculateRegisterValue24K = (register: InventoryRegister): number => {
-  return register.items.reduce((total, item) => total + calculateItemValue24K(item), 0);
-};
