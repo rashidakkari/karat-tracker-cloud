@@ -46,19 +46,19 @@ const Index = () => {
         transition={{ delay: 0.3, duration: 0.5 }}
         className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl px-4"
       >
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-white p-6 rounded-lg shadow-md cursor-pointer" onClick={() => navigate("/inventory")}>
           <h3 className="text-xl font-semibold text-amber-700 mb-3">Inventory Management</h3>
           <p className="text-gray-600">
             Track your gold inventory with precision. Manage items by weight, karat, and value.
           </p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-white p-6 rounded-lg shadow-md cursor-pointer" onClick={() => navigate("/transactions")}>
           <h3 className="text-xl font-semibold text-amber-700 mb-3">Transaction Tracking</h3>
           <p className="text-gray-600">
             Record all sales, purchases, and exchanges with detailed analytics and reporting.
           </p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-white p-6 rounded-lg shadow-md cursor-pointer" onClick={() => navigate("/calculator")}>
           <h3 className="text-xl font-semibold text-amber-700 mb-3">Price Calculator</h3>
           <p className="text-gray-600">
             Calculate gold values instantly based on weight, purity, and current market prices.

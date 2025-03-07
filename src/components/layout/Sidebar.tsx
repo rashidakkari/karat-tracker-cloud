@@ -34,7 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, isOpen, onToggle }) => {
     {
       name: "Dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
-      href: "/",
+      href: "/dashboard",
     },
     {
       name: "Inventory",

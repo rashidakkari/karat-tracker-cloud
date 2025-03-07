@@ -12,6 +12,7 @@ import { InventoryItem } from "@/models/inventory";
 const Inventory = () => {
   const [open, setOpen] = useState(false);
   const { inventory, addInventoryItem, updateInventoryItem, removeInventoryItem } = useApp();
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
 
   // Handle saving an inventory item
   const handleSaveItem = (item: any) => {
@@ -26,6 +27,17 @@ const Inventory = () => {
       addInventoryItem(item);
     }
     setOpen(false);
+    setEditingItem(null);
+  };
+
+  const handleEditItem = (item: InventoryItem) => {
+    setEditingItem(item);
+    setOpen(true);
+  };
+
+  const handleViewItem = (item: InventoryItem) => {
+    console.log("Viewing item:", item);
+    // You could implement a view modal here
   };
 
   return (
@@ -41,18 +53,22 @@ const Inventory = () => {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
               <InventoryForm 
+                item={editingItem || undefined}
                 onSave={handleSaveItem} 
-                onCancel={() => setOpen(false)} 
+                onCancel={() => {
+                  setOpen(false);
+                  setEditingItem(null);
+                }} 
               />
             </DialogContent>
           </Dialog>
         </div>
         <InventoryList 
           registerType="Wholesale" 
-          items={inventory as any} 
+          items={inventory} 
           onAddItem={() => setOpen(true)} 
-          onEditItem={() => {}} 
-          onViewItem={() => {}} 
+          onEditItem={handleEditItem} 
+          onViewItem={handleViewItem} 
         />
       </div>
     </AppLayout>

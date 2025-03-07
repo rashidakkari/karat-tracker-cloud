@@ -8,26 +8,33 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { PlusIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Transaction } from "@/models/transactions";
+import { toast } from "sonner";
 
 const Transactions = () => {
   const [open, setOpen] = useState(false);
-  const { transactions, addTransaction } = useApp();
+  const { transactions, inventory, financial, addTransaction } = useApp();
   
-  // Mock functions for the TransactionList props
+  // Functions for transaction handling
   const handleViewTransaction = (transaction: Transaction) => {
+    toast.info(`Viewing details for transaction: ${transaction.id}`);
     console.log("View transaction", transaction);
   };
   
   const handleEditTransaction = (transaction: Transaction) => {
+    toast.info(`Editing transaction: ${transaction.id}`);
     console.log("Edit transaction", transaction);
+    // In a full implementation, you would set the editing transaction and open the form
   };
   
   const handlePrintReceipt = (transaction: Transaction) => {
+    toast.success(`Printing receipt for transaction: ${transaction.id}`);
     console.log("Print receipt", transaction);
+    // In a full implementation, you would generate and print a receipt
   };
 
   const handleComplete = (transaction: any) => {
     addTransaction(transaction);
+    toast.success("Transaction completed successfully");
     setOpen(false);
   };
 
@@ -42,6 +49,7 @@ const Transactions = () => {
     paymentMethod: t.paymentMethod,
     status: "completed",
     currency: t.currency,
+    registerType: t.registerType || "Wholesale",
     createdAt: new Date(t.dateTime),
     updatedAt: new Date(t.dateTime)
   }));
@@ -60,8 +68,8 @@ const Transactions = () => {
             <DialogContent className="sm:max-w-[600px]">
               <TransactionForm 
                 transaction={undefined}
-                inventoryItems={[]}
-                currentSpotPrice={0}
+                inventoryItems={inventory}
+                currentSpotPrice={financial.spotPrice}
                 onSave={handleComplete} 
                 onCancel={() => setOpen(false)}
               />
