@@ -41,23 +41,34 @@ const Inventory = () => {
   };
 
   // Map AppContext inventory items to ModelInventoryItem type
-  const mappedInventory = inventory.map(item => ({
-    id: item.id,
-    name: item.name,
-    category: item.category as ItemCategory,
-    weight: item.weight, 
-    weightUnit: item.weightUnit === "kg" ? "g" : item.weightUnit, // Convert kg to g to match allowed types
-    purity: item.purity,
-    quantity: item.quantity,
-    costPrice: typeof item.costPrice !== 'undefined' ? item.costPrice : 0,
-    sellingPrice: 0,
-    equivalent24k: item.equivalent24k || 0,
-    description: item.description || '',
-    dateAcquired: item.dateAdded || '',
-    isAvailable: true,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  })) as ModelInventoryItem[];
+  const mappedInventory = inventory.map(item => {
+    // Define the mapped item with the correct type structure
+    const mappedItem: ModelInventoryItem = {
+      id: item.id,
+      name: item.name,
+      category: item.category as ItemCategory,
+      weight: item.weight, 
+      weightUnit: item.weightUnit === "kg" ? "g" : item.weightUnit as "g" | "oz" | "tola" | "baht", 
+      purity: item.purity,
+      quantity: item.quantity,
+      // The costPrice field in the model is required
+      costPrice: 0, // Default value
+      sellingPrice: 0,
+      equivalent24k: item.equivalent24k || 0,
+      description: item.description || '',
+      dateAcquired: item.dateAdded || '',
+      isAvailable: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    // If the item from context has costPrice, use it
+    if ('costPrice' in item && typeof item.costPrice !== 'undefined') {
+      mappedItem.costPrice = item.costPrice;
+    }
+    
+    return mappedItem;
+  });
 
   return (
     <AppLayout>
