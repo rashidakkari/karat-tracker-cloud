@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { PlusIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Transaction as ModelTransaction, TransactionItem } from "@/models/transactions";
-import { InventoryItem as ModelInventoryItem } from "@/models/inventory";
+import { InventoryItem as ModelInventoryItem, ItemCategory } from "@/models/inventory";
 import { toast } from "sonner";
 
 const Transactions = () => {
@@ -40,7 +40,7 @@ const Transactions = () => {
   };
 
   // Map the AppContext transactions to match the model Transaction type
-  const mappedTransactions: ModelTransaction[] = transactions.map((t: any) => ({
+  const mappedTransactions = transactions.map((t: any) => ({
     id: t.id,
     type: t.type,
     customerName: t.customer || "Unknown",
@@ -53,13 +53,13 @@ const Transactions = () => {
     registerType: t.registerType || "Wholesale",
     createdAt: new Date(t.dateTime),
     updatedAt: new Date(t.dateTime)
-  }));
+  })) as ModelTransaction[];
 
   // Map AppContext inventory items to ModelInventoryItem type
-  const mappedInventory: ModelInventoryItem[] = inventory.map(item => ({
+  const mappedInventory = inventory.map(item => ({
     id: item.id,
     name: item.name,
-    category: item.category as any,
+    category: item.category as ItemCategory,
     weight: item.weight,
     weightUnit: item.weightUnit === "kg" ? "g" : item.weightUnit, // Convert kg to g to match allowed types
     purity: item.purity,
@@ -72,7 +72,7 @@ const Transactions = () => {
     isAvailable: true,
     createdAt: new Date(),
     updatedAt: new Date()
-  }));
+  })) as ModelInventoryItem[];
 
   return (
     <AppLayout>

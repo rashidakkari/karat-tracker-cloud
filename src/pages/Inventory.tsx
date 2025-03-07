@@ -7,7 +7,7 @@ import InventoryForm from "@/components/inventory/InventoryForm";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { PlusIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
-import { InventoryItem as ModelInventoryItem } from "@/models/inventory";
+import { InventoryItem as ModelInventoryItem, ItemCategory } from "@/models/inventory";
 
 const Inventory = () => {
   const [open, setOpen] = useState(false);
@@ -41,10 +41,10 @@ const Inventory = () => {
   };
 
   // Map AppContext inventory items to ModelInventoryItem type
-  const mappedInventory: ModelInventoryItem[] = inventory.map(item => ({
+  const mappedInventory = inventory.map(item => ({
     id: item.id,
     name: item.name,
-    category: item.category as any,
+    category: item.category as ItemCategory,
     weight: item.weight, 
     weightUnit: item.weightUnit === "kg" ? "g" : item.weightUnit, // Convert kg to g to match allowed types
     purity: item.purity,
@@ -57,7 +57,7 @@ const Inventory = () => {
     isAvailable: true,
     createdAt: new Date(),
     updatedAt: new Date()
-  }));
+  })) as ModelInventoryItem[];
 
   return (
     <AppLayout>
