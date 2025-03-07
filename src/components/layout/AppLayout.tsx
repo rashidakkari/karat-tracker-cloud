@@ -1,12 +1,15 @@
 
-import React, { useState, useEffect } from "react";
-import { Outlet } from "react-router-dom";
+import React, { useState, useEffect, ReactNode } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Sidebar from "./Sidebar";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
-const AppLayout = () => {
+interface AppLayoutProps {
+  children: ReactNode;
+}
+
+const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const isMobile = useIsMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
@@ -39,7 +42,7 @@ const AppLayout = () => {
         )}
       >
         <div className="container px-4 py-6 mx-auto">
-          <Outlet />
+          {children}
         </div>
       </motion.main>
     </div>

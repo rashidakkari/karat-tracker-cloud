@@ -14,11 +14,16 @@ const Inventory = () => {
   const { inventory, addInventoryItem, updateInventoryItem, removeInventoryItem } = useApp();
 
   // Handle saving an inventory item
-  const handleSaveItem = (item: Partial<InventoryItem>) => {
+  const handleSaveItem = (item: any) => {
+    // Convert the category to lowercase if needed
+    if (item.category === "Bars") item.category = "bars";
+    if (item.category === "Coins") item.category = "coins";
+    if (item.category === "Jewelry") item.category = "jewelry";
+    
     if (item.id) {
       updateInventoryItem(item.id, item);
     } else {
-      addInventoryItem(item as any);
+      addInventoryItem(item);
     }
     setOpen(false);
   };
@@ -46,8 +51,8 @@ const Inventory = () => {
           registerType="Wholesale" 
           items={inventory as any} 
           onAddItem={() => setOpen(true)} 
-          onEditItem={(item) => {}} 
-          onViewItem={(item) => {}} 
+          onEditItem={() => {}} 
+          onViewItem={() => {}} 
         />
       </div>
     </AppLayout>

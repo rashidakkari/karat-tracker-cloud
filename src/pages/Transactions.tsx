@@ -31,6 +31,21 @@ const Transactions = () => {
     setOpen(false);
   };
 
+  // Map the AppContext transactions to match the model Transaction type
+  const mappedTransactions: Transaction[] = transactions.map((t: any) => ({
+    id: t.id,
+    type: t.type,
+    customerName: t.customer || "Unknown",
+    date: t.dateTime,
+    items: [],
+    totalAmount: t.totalPrice || 0,
+    paymentMethod: t.paymentMethod,
+    status: "completed",
+    currency: t.currency,
+    createdAt: new Date(t.dateTime),
+    updatedAt: new Date(t.dateTime)
+  }));
+
   return (
     <AppLayout>
       <div className="container mx-auto py-6">
@@ -54,7 +69,7 @@ const Transactions = () => {
           </Dialog>
         </div>
         <TransactionList 
-          transactions={transactions}
+          transactions={mappedTransactions}
           onCreateTransaction={() => setOpen(true)}
           onViewTransaction={handleViewTransaction}
           onEditTransaction={handleEditTransaction}
