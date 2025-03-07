@@ -1,5 +1,5 @@
 
-import Dashboard as DashboardComponent from "@/components/dashboard/Dashboard";
+import DashboardComponent from "@/components/dashboard/Dashboard";
 import AppLayout from "@/components/layout/AppLayout";
 
 const Dashboard = () => {
