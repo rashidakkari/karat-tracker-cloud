@@ -7,12 +7,12 @@ import InventoryForm from "@/components/inventory/InventoryForm";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { PlusIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
-import { InventoryItem } from "@/models/inventory";
+import { InventoryItem as ModelInventoryItem } from "@/models/inventory";
 
 const Inventory = () => {
   const [open, setOpen] = useState(false);
   const { inventory, addInventoryItem, updateInventoryItem, removeInventoryItem } = useApp();
-  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [editingItem, setEditingItem] = useState<ModelInventoryItem | null>(null);
 
   // Handle saving an inventory item
   const handleSaveItem = (item: any) => {
@@ -30,15 +30,34 @@ const Inventory = () => {
     setEditingItem(null);
   };
 
-  const handleEditItem = (item: InventoryItem) => {
+  const handleEditItem = (item: ModelInventoryItem) => {
     setEditingItem(item);
     setOpen(true);
   };
 
-  const handleViewItem = (item: InventoryItem) => {
+  const handleViewItem = (item: ModelInventoryItem) => {
     console.log("Viewing item:", item);
     // You could implement a view modal here
   };
+
+  // Map AppContext inventory items to ModelInventoryItem type
+  const mappedInventory: ModelInventoryItem[] = inventory.map(item => ({
+    id: item.id,
+    name: item.name,
+    category: item.category as any,
+    weight: item.weight, 
+    weightUnit: item.weightUnit,
+    purity: item.purity,
+    quantity: item.quantity,
+    costPrice: item.costPrice || 0, // Add the required costPrice field
+    sellingPrice: 0,
+    equivalent24k: item.equivalent24k || 0,
+    description: item.description || '',
+    dateAcquired: item.dateAdded || '',
+    isAvailable: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }));
 
   return (
     <AppLayout>
@@ -65,7 +84,7 @@ const Inventory = () => {
         </div>
         <InventoryList 
           registerType="Wholesale" 
-          items={inventory} 
+          items={mappedInventory} 
           onAddItem={() => setOpen(true)} 
           onEditItem={handleEditItem} 
           onViewItem={handleViewItem} 

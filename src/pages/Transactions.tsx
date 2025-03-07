@@ -7,7 +7,8 @@ import TransactionForm from "@/components/transactions/TransactionForm";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { PlusIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
-import { Transaction } from "@/models/transactions";
+import { Transaction as ModelTransaction, TransactionItem } from "@/models/transactions";
+import { InventoryItem as ModelInventoryItem } from "@/models/inventory";
 import { toast } from "sonner";
 
 const Transactions = () => {
@@ -15,18 +16,18 @@ const Transactions = () => {
   const { transactions, inventory, financial, addTransaction } = useApp();
   
   // Functions for transaction handling
-  const handleViewTransaction = (transaction: Transaction) => {
+  const handleViewTransaction = (transaction: ModelTransaction) => {
     toast.info(`Viewing details for transaction: ${transaction.id}`);
     console.log("View transaction", transaction);
   };
   
-  const handleEditTransaction = (transaction: Transaction) => {
+  const handleEditTransaction = (transaction: ModelTransaction) => {
     toast.info(`Editing transaction: ${transaction.id}`);
     console.log("Edit transaction", transaction);
     // In a full implementation, you would set the editing transaction and open the form
   };
   
-  const handlePrintReceipt = (transaction: Transaction) => {
+  const handlePrintReceipt = (transaction: ModelTransaction) => {
     toast.success(`Printing receipt for transaction: ${transaction.id}`);
     console.log("Print receipt", transaction);
     // In a full implementation, you would generate and print a receipt
@@ -39,7 +40,7 @@ const Transactions = () => {
   };
 
   // Map the AppContext transactions to match the model Transaction type
-  const mappedTransactions: Transaction[] = transactions.map((t: any) => ({
+  const mappedTransactions: ModelTransaction[] = transactions.map((t: any) => ({
     id: t.id,
     type: t.type,
     customerName: t.customer || "Unknown",
@@ -52,6 +53,25 @@ const Transactions = () => {
     registerType: t.registerType || "Wholesale",
     createdAt: new Date(t.dateTime),
     updatedAt: new Date(t.dateTime)
+  }));
+
+  // Map AppContext inventory items to ModelInventoryItem type
+  const mappedInventory: ModelInventoryItem[] = inventory.map(item => ({
+    id: item.id,
+    name: item.name,
+    category: item.category as any,
+    weight: item.weight,
+    weightUnit: item.weightUnit,
+    purity: item.purity,
+    quantity: item.quantity,
+    costPrice: item.costPrice || 0, // Add the required costPrice field
+    sellingPrice: 0,
+    equivalent24k: item.equivalent24k || 0,
+    description: item.description || '',
+    dateAcquired: item.dateAdded || '',
+    isAvailable: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
   }));
 
   return (
@@ -68,7 +88,7 @@ const Transactions = () => {
             <DialogContent className="sm:max-w-[600px]">
               <TransactionForm 
                 transaction={undefined}
-                inventoryItems={inventory}
+                inventoryItems={mappedInventory}
                 currentSpotPrice={financial.spotPrice}
                 onSave={handleComplete} 
                 onCancel={() => setOpen(false)}
