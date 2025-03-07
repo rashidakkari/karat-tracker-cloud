@@ -64,7 +64,7 @@ const Transactions = () => {
     weightUnit: item.weightUnit === "kg" ? "g" : item.weightUnit, // Convert kg to g to match allowed types
     purity: item.purity,
     quantity: item.quantity,
-    costPrice: item.costPrice || 0,
+    costPrice: typeof item.costPrice !== 'undefined' ? item.costPrice : 0,
     sellingPrice: 0,
     equivalent24k: item.equivalent24k || 0,
     description: item.description || '',
