@@ -61,10 +61,10 @@ const Transactions = () => {
     name: item.name,
     category: item.category as any,
     weight: item.weight,
-    weightUnit: item.weightUnit,
+    weightUnit: item.weightUnit === "kg" ? "g" : item.weightUnit, // Convert kg to g to match allowed types
     purity: item.purity,
     quantity: item.quantity,
-    costPrice: item.costPrice || 0, // Add the required costPrice field
+    costPrice: item.costPrice || 0,
     sellingPrice: 0,
     equivalent24k: item.equivalent24k || 0,
     description: item.description || '',
