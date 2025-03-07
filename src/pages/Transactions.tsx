@@ -77,8 +77,8 @@ const Transactions = () => {
       updatedAt: new Date()
     };
     
-    // If the item from context has costPrice, use it
-    if ('costPrice' in item && typeof item.costPrice !== 'undefined') {
+    // If the item from context has costPrice, use it with proper type checking
+    if ('costPrice' in item && typeof item.costPrice === 'number') {
       mappedItem.costPrice = item.costPrice;
     }
     
