@@ -1,14 +1,21 @@
 
-import { AppLayout } from "@/components/layout/AppLayout";
-import { TransactionList } from "@/components/transactions/TransactionList";
+import AppLayout from "@/components/layout/AppLayout";
+import TransactionList from "@/components/transactions/TransactionList";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { TransactionForm } from "@/components/transactions/TransactionForm";
+import TransactionForm from "@/components/transactions/TransactionForm";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { PlusIcon } from "lucide-react";
+import { useApp } from "@/contexts/AppContext";
 
 const Transactions = () => {
   const [open, setOpen] = useState(false);
+  const { addTransaction } = useApp();
+
+  const handleComplete = (transaction: any) => {
+    addTransaction(transaction);
+    setOpen(false);
+  };
 
   return (
     <AppLayout>
@@ -22,7 +29,7 @@ const Transactions = () => {
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
-              <TransactionForm onComplete={() => setOpen(false)} />
+              <TransactionForm onComplete={handleComplete} />
             </DialogContent>
           </Dialog>
         </div>

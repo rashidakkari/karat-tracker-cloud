@@ -16,28 +16,39 @@ import {
   Cell
 } from 'recharts';
 
-interface ChartProps {
+export interface ChartProps {
   data: any[];
   width?: number | string;
   height?: number | string;
   className?: string;
+  categories?: string[];
+  index?: string;
+  colors?: string[];
+  valueFormatter?: (value: any) => string;
+  category?: string;
 }
 
 export const BarChart = ({
   data,
   width = '100%',
   height = 300,
-  className = ''
+  className = '',
+  categories = ['value'],
+  index = 'name',
+  colors = ['#8884d8'],
+  valueFormatter = (value) => value.toString()
 }: ChartProps) => {
   return (
     <ResponsiveContainer width={width} height={height} className={className}>
       <RechartsBarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="name" />
+        <XAxis dataKey={index} />
         <YAxis />
-        <Tooltip />
+        <Tooltip formatter={valueFormatter} />
         <Legend />
-        <Bar dataKey="value" fill="#8884d8" />
+        {categories.map((category, i) => (
+          <Bar key={category} dataKey={category} fill={colors[i % colors.length]} />
+        ))}
       </RechartsBarChart>
     </ResponsiveContainer>
   );
@@ -47,17 +58,29 @@ export const LineChart = ({
   data,
   width = '100%',
   height = 300,
-  className = ''
+  className = '',
+  categories = ['value'],
+  index = 'name',
+  colors = ['#8884d8'],
+  valueFormatter = (value) => value.toString()
 }: ChartProps) => {
   return (
     <ResponsiveContainer width={width} height={height} className={className}>
       <RechartsLineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="name" />
+        <XAxis dataKey={index} />
         <YAxis />
-        <Tooltip />
+        <Tooltip formatter={valueFormatter} />
         <Legend />
-        <Line type="monotone" dataKey="value" stroke="#8884d8" activeDot={{ r: 8 }} />
+        {categories.map((category, i) => (
+          <Line 
+            key={category} 
+            type="monotone" 
+            dataKey={category} 
+            stroke={colors[i % colors.length]} 
+            activeDot={{ r: 8 }} 
+          />
+        ))}
       </RechartsLineChart>
     </ResponsiveContainer>
   );
@@ -67,10 +90,11 @@ export const PieChart = ({
   data,
   width = '100%',
   height = 300,
-  className = ''
+  className = '',
+  category = 'value',
+  index = 'name',
+  colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28DFF']
 }: ChartProps) => {
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28DFF'];
-
   return (
     <ResponsiveContainer width={width} height={height} className={className}>
       <RechartsPieChart margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -81,11 +105,12 @@ export const PieChart = ({
           labelLine={false}
           outerRadius={80}
           fill="#8884d8"
-          dataKey="value"
+          dataKey={category}
+          nameKey={index}
           label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
         >
-          {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+          {data.map((entry, i) => (
+            <Cell key={`cell-${i}`} fill={colors[i % colors.length]} />
           ))}
         </Pie>
         <Tooltip />

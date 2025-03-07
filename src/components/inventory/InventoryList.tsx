@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { InventoryItem, RegisterType } from '@/models/inventory';
+import { InventoryItem, RegisterType, GoldPurity } from '@/models/inventory';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -32,11 +32,12 @@ const InventoryList: React.FC<InventoryListProps> = ({
     // Apply search term filter
     const matchesSearch = 
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.barcode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.barcode?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
       item.id.toLowerCase().includes(searchTerm.toLowerCase());
       
     // Apply category filter
-    const matchesFilter = filter === 'all' || item.category.toLowerCase() === filter.toLowerCase();
+    const matchesFilter = filter === 'all' || 
+      (item.category && item.category.toLowerCase() === filter.toLowerCase());
     
     return matchesSearch && matchesFilter;
   });
@@ -46,12 +47,14 @@ const InventoryList: React.FC<InventoryListProps> = ({
   const getTotalValue = (items: InventoryItem[]): number => {
     return items.reduce((total, item) => {
       const weight24K = convertTo24K(item.weight, item.purity);
-      return total + (weight24K * item.quantity);
+      return total + (weight24K * (item.quantity || 1));
     }, 0);
   };
 
   const getCategoryCount = (category: string): number => {
-    return items.filter(item => item.category.toLowerCase() === category.toLowerCase()).length;
+    return items.filter(item => 
+      item.category && item.category.toLowerCase() === category.toLowerCase()
+    ).length;
   };
 
   return (
@@ -149,7 +152,7 @@ const InventoryList: React.FC<InventoryListProps> = ({
                     </TableCell>
                     <TableCell>{item.quantity}</TableCell>
                     <TableCell className="text-right">
-                      {(convertTo24K(item.weight, item.purity) * item.quantity).toFixed(3)}g
+                      {(convertTo24K(item.weight, item.purity) * (item.quantity || 1)).toFixed(3)}g
                     </TableCell>
                     <TableCell className="text-right">
                       <Button

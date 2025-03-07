@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { InventoryItem, ItemCategory } from '@/models/inventory';
-import { GoldPurity, WeightUnit } from '@/utils/goldCalculations';
+import { InventoryItem, ItemCategory, GoldPurity } from '@/models/inventory';
+import { WeightUnit } from '@/utils/goldCalculations';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -106,7 +106,7 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
             <div className="space-y-2">
               <Label htmlFor="category">Category*</Label>
               <Select
-                value={formData.category}
+                value={formData.category as string}
                 onValueChange={(value) => handleChange('category', value as ItemCategory)}
               >
                 <SelectTrigger>
@@ -123,7 +123,7 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
             <div className="space-y-2">
               <Label htmlFor="purity">Purity*</Label>
               <Select
-                value={formData.purity}
+                value={formData.purity as string}
                 onValueChange={(value) => handleChange('purity', value as GoldPurity)}
               >
                 <SelectTrigger>
@@ -171,7 +171,7 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
             <div className="space-y-2">
               <Label htmlFor="weightUnit">Unit*</Label>
               <Select
-                value={formData.weightUnit}
+                value={formData.weightUnit as string}
                 onValueChange={(value) => handleChange('weightUnit', value as WeightUnit)}
               >
                 <SelectTrigger>
@@ -202,7 +202,7 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
             <div className="space-y-2">
               <Label htmlFor="costCurrency">Currency</Label>
               <Select
-                value={formData.costCurrency}
+                value={formData.costCurrency as string}
                 onValueChange={(value) => handleChange('costCurrency', value)}
               >
                 <SelectTrigger>

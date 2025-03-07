@@ -1,14 +1,26 @@
 
-import { AppLayout } from "@/components/layout/AppLayout";
-import { InventoryList } from "@/components/inventory/InventoryList";
+import AppLayout from "@/components/layout/AppLayout";
+import InventoryList from "@/components/inventory/InventoryList";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { InventoryForm } from "@/components/inventory/InventoryForm";
+import InventoryForm from "@/components/inventory/InventoryForm";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { PlusIcon } from "lucide-react";
+import { useApp } from "@/contexts/AppContext";
+import { InventoryItem } from "@/models/inventory";
 
 const Inventory = () => {
   const [open, setOpen] = useState(false);
+  const { inventory, addInventoryItem, updateInventoryItem, removeInventoryItem } = useApp();
+
+  const handleSaveItem = (item: InventoryItem) => {
+    if (item.id) {
+      updateInventoryItem(item.id, item);
+    } else {
+      addInventoryItem(item as any);
+    }
+    setOpen(false);
+  };
 
   return (
     <AppLayout>
@@ -22,11 +34,20 @@ const Inventory = () => {
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
-              <InventoryForm onComplete={() => setOpen(false)} />
+              <InventoryForm 
+                onSave={handleSaveItem} 
+                onCancel={() => setOpen(false)} 
+              />
             </DialogContent>
           </Dialog>
         </div>
-        <InventoryList />
+        <InventoryList 
+          registerType="Wholesale" 
+          items={inventory} 
+          onAddItem={() => setOpen(true)} 
+          onEditItem={(item) => {}} 
+          onViewItem={(item) => {}} 
+        />
       </div>
     </AppLayout>
   );
