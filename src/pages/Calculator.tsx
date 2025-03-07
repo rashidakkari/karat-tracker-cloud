@@ -1,4 +1,5 @@
 
+import React from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import PriceCalculator from "@/components/calculator/PriceCalculator";
 import { useApp } from "@/contexts/AppContext";

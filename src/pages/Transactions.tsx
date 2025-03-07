@@ -1,16 +1,30 @@
 
+import React, { useState } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import TransactionList from "@/components/transactions/TransactionList";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
 import TransactionForm from "@/components/transactions/TransactionForm";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { PlusIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
+import { Transaction } from "@/models/transactions";
 
 const Transactions = () => {
   const [open, setOpen] = useState(false);
-  const { addTransaction } = useApp();
+  const { transactions, addTransaction } = useApp();
+  
+  // Mock functions for the TransactionList props
+  const handleViewTransaction = (transaction: Transaction) => {
+    console.log("View transaction", transaction);
+  };
+  
+  const handleEditTransaction = (transaction: Transaction) => {
+    console.log("Edit transaction", transaction);
+  };
+  
+  const handlePrintReceipt = (transaction: Transaction) => {
+    console.log("Print receipt", transaction);
+  };
 
   const handleComplete = (transaction: any) => {
     addTransaction(transaction);
@@ -29,11 +43,23 @@ const Transactions = () => {
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
-              <TransactionForm onComplete={handleComplete} />
+              <TransactionForm 
+                transaction={undefined}
+                inventoryItems={[]}
+                currentSpotPrice={0}
+                onSave={handleComplete} 
+                onCancel={() => setOpen(false)}
+              />
             </DialogContent>
           </Dialog>
         </div>
-        <TransactionList />
+        <TransactionList 
+          transactions={transactions}
+          onCreateTransaction={() => setOpen(true)}
+          onViewTransaction={handleViewTransaction}
+          onEditTransaction={handleEditTransaction}
+          onPrintReceipt={handlePrintReceipt}
+        />
       </div>
     </AppLayout>
   );

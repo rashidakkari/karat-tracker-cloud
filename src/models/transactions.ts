@@ -7,19 +7,19 @@ export type TransactionStatus = 'completed' | 'pending' | 'cancelled' | 'Complet
 
 export interface TransactionItem {
   id?: string;
-  inventoryItem: InventoryItem;
+  inventoryItem?: InventoryItem;
   inventoryItemId?: string;
   quantity: number;
-  pricePerUnit: number;
+  pricePerUnit?: number;
+  unitPrice?: number;
   discount?: number;
   subtotal: number;
+  totalPrice?: number;
   name?: string;
   category?: string;
   purity?: string;
   weight?: number;
   weightUnit?: string;
-  unitPrice?: number;
-  totalPrice?: number;
   currency?: string;
 }
 

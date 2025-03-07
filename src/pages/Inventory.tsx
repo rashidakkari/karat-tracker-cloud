@@ -1,8 +1,8 @@
 
+import React, { useState } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import InventoryList from "@/components/inventory/InventoryList";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
 import InventoryForm from "@/components/inventory/InventoryForm";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { PlusIcon } from "lucide-react";
@@ -13,7 +13,8 @@ const Inventory = () => {
   const [open, setOpen] = useState(false);
   const { inventory, addInventoryItem, updateInventoryItem, removeInventoryItem } = useApp();
 
-  const handleSaveItem = (item: InventoryItem) => {
+  // Handle saving an inventory item
+  const handleSaveItem = (item: Partial<InventoryItem>) => {
     if (item.id) {
       updateInventoryItem(item.id, item);
     } else {
@@ -43,7 +44,7 @@ const Inventory = () => {
         </div>
         <InventoryList 
           registerType="Wholesale" 
-          items={inventory} 
+          items={inventory as any} 
           onAddItem={() => setOpen(true)} 
           onEditItem={(item) => {}} 
           onViewItem={(item) => {}} 

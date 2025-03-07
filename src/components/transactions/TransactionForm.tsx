@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Transaction, TransactionItem, Payment, TransactionType } from '@/models/transactions';
 import { InventoryItem } from '@/models/inventory';
@@ -65,13 +64,10 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   
   const isEditing = !!transaction;
 
-  // Calculate totals whenever items or payments change
   useEffect(() => {
     const totalAmount = selectedItems.reduce((sum, item) => sum + item.totalPrice, 0);
     const paidAmount = payments.reduce((sum, payment) => {
       if (payment.method === 'Gold') {
-        // Calculate the value of gold payment based on spot price
-        // This is a simplified calculation - in a real app you'd need more complex logic
         return sum + (payment.amount || 0);
       }
       return sum + (payment.amount || 0);
@@ -103,18 +99,15 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       return;
     }
     
-    // Calculate price based on transaction type and item category
     let unitPrice = 0;
     const isBars = inventoryItem.category === 'Bars' || inventoryItem.category === 'Coins';
     const purity = inventoryItem.purity as GoldPurity;
     
     if (formData.type === 'Buy') {
-      // We are buying from customer
       unitPrice = isBars 
         ? calculateBarBuyingPrice(currentSpotPrice, inventoryItem.weight, purity as '999.9' | '995')
         : calculateJewelryBuyingPrice(currentSpotPrice, inventoryItem.weight, purity);
     } else {
-      // We are selling to customer
       unitPrice = isBars
         ? calculateBarSellingPrice(currentSpotPrice, inventoryItem.weight, purity as '999.9' | '995', formData.commission || 0)
         : calculateJewelrySellingPrice(currentSpotPrice, inventoryItem.weight, purity, formData.commission || 0);
@@ -125,6 +118,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     const newItem: TransactionItem = {
       id: uuidv4(),
       inventoryItemId: inventoryItem.id,
+      inventoryItem: inventoryItem,
       name: inventoryItem.name,
       category: inventoryItem.category,
       purity: inventoryItem.purity,
@@ -132,8 +126,10 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       weightUnit: inventoryItem.weightUnit,
       quantity: quantity,
       unitPrice: unitPrice,
+      pricePerUnit: unitPrice,
       totalPrice: totalPrice,
-      currency: formData.currency as CurrencyCode
+      subtotal: totalPrice,
+      currency: formData.currency as string
     };
     
     setSelectedItems([...selectedItems, newItem]);
@@ -180,7 +176,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate the form
     if (!formData.customerName || formData.customerName.trim() === '') {
       toast.error('Customer name is required');
       return;
@@ -191,7 +186,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       return;
     }
     
-    // Set the final status
     const finalTransaction: Transaction = {
       ...formData as Transaction,
       items: selectedItems,
@@ -199,7 +193,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       status: payments.length > 0 && formData.balance === 0 ? 'Completed' : 'Pending'
     };
     
-    // Save the transaction
     onSave(finalTransaction);
   };
 

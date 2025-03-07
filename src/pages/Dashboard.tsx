@@ -1,4 +1,5 @@
 
+import React from "react";
 import DashboardComponent from "@/components/dashboard/Dashboard";
 import AppLayout from "@/components/layout/AppLayout";
 
