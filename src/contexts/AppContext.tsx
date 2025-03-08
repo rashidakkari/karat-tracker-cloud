@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { InventoryItem, Transaction, FinancialData, STORAGE_KEYS, DEFAULT_FINANCIAL } from './types';
+import { InventoryItem, Transaction, FinancialData, STORAGE_KEYS, DEFAULT_FINANCIAL, Currency } from './types';
 import { createInventoryService, calculateEquivalent24k } from './inventoryService';
 import { createTransactionService } from './transactionService';
 import { createFinancialService } from './financialService';
