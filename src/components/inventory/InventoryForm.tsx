@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { InventoryItem, ItemCategory, GoldPurity } from '@/models/inventory';
 import { WeightUnit } from '@/utils/goldCalculations';

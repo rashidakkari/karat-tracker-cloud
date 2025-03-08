@@ -4,15 +4,17 @@ import AppLayout from "@/components/layout/AppLayout";
 import InventoryList from "@/components/inventory/InventoryList";
 import { Button } from "@/components/ui/button";
 import InventoryForm from "@/components/inventory/InventoryForm";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PlusIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { InventoryItem as ModelInventoryItem, ItemCategory } from "@/models/inventory";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const Inventory = () => {
   const [open, setOpen] = useState(false);
   const { inventory, addInventoryItem, updateInventoryItem, removeInventoryItem } = useApp();
   const [editingItem, setEditingItem] = useState<ModelInventoryItem | null>(null);
+  const [activeTab, setActiveTab] = useState<"wholesale" | "retail">("wholesale");
 
   // Handle saving an inventory item
   const handleSaveItem = (item: any) => {
@@ -20,6 +22,9 @@ const Inventory = () => {
     if (item.category === "Bars") item.category = "bars";
     if (item.category === "Coins") item.category = "coins";
     if (item.category === "Jewelry") item.category = "jewelry";
+    
+    // Set the type based on the active tab
+    item.type = activeTab;
     
     if (item.id) {
       updateInventoryItem(item.id, item);
@@ -40,35 +45,42 @@ const Inventory = () => {
     // You could implement a view modal here
   };
 
-  // Map AppContext inventory items to ModelInventoryItem type
-  const mappedInventory = inventory.map(item => {
-    // Define the mapped item with the correct type structure
-    const mappedItem: ModelInventoryItem = {
-      id: item.id,
-      name: item.name,
-      category: item.category as ItemCategory,
-      weight: item.weight, 
-      weightUnit: item.weightUnit === "kg" ? "g" : item.weightUnit as "g" | "oz" | "tola" | "baht", 
-      purity: item.purity,
-      quantity: item.quantity,
-      // The costPrice field in the model is required
-      costPrice: 0, // Default value
-      sellingPrice: 0,
-      equivalent24k: item.equivalent24k || 0,
-      description: item.description || '',
-      dateAcquired: item.dateAdded || '',
-      isAvailable: true,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    // If the item from context has costPrice, use it with proper type checking
-    if ('costPrice' in item && typeof item.costPrice === 'number') {
-      mappedItem.costPrice = item.costPrice;
-    }
-    
-    return mappedItem;
-  });
+  // Map AppContext inventory items to ModelInventoryItem type and filter by type
+  const mapAndFilterInventory = (type: "wholesale" | "retail") => {
+    return inventory
+      .filter(item => item.type === type)
+      .map(item => {
+        // Define the mapped item with the correct type structure
+        const mappedItem: ModelInventoryItem = {
+          id: item.id,
+          name: item.name,
+          category: item.category as ItemCategory,
+          weight: item.weight, 
+          weightUnit: item.weightUnit === "kg" ? "g" : item.weightUnit as "g" | "oz" | "tola" | "baht", 
+          purity: item.purity,
+          quantity: item.quantity,
+          // The costPrice field in the model is required
+          costPrice: 0, // Default value
+          sellingPrice: 0,
+          equivalent24k: item.equivalent24k || 0,
+          description: item.description || '',
+          dateAcquired: item.dateAdded || '',
+          isAvailable: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        
+        // If the item from context has costPrice, use it with proper type checking
+        if ('costPrice' in item && typeof item.costPrice === 'number') {
+          mappedItem.costPrice = item.costPrice;
+        }
+        
+        return mappedItem;
+      });
+  };
+
+  const wholesaleInventory = mapAndFilterInventory("wholesale");
+  const retailInventory = mapAndFilterInventory("retail");
 
   return (
     <AppLayout>
@@ -82,6 +94,7 @@ const Inventory = () => {
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
+              <DialogTitle>Add New Inventory Item</DialogTitle>
               <InventoryForm 
                 item={editingItem || undefined}
                 onSave={handleSaveItem} 
@@ -93,13 +106,33 @@ const Inventory = () => {
             </DialogContent>
           </Dialog>
         </div>
-        <InventoryList 
-          registerType="Wholesale" 
-          items={mappedInventory} 
-          onAddItem={() => setOpen(true)} 
-          onEditItem={handleEditItem} 
-          onViewItem={handleViewItem} 
-        />
+
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "wholesale" | "retail")} className="mb-6">
+          <TabsList className="w-full max-w-md grid grid-cols-2">
+            <TabsTrigger value="wholesale">Wholesale Inventory</TabsTrigger>
+            <TabsTrigger value="retail">Retail Inventory</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="wholesale" className="mt-4">
+            <InventoryList 
+              registerType="Wholesale" 
+              items={wholesaleInventory} 
+              onAddItem={() => setOpen(true)} 
+              onEditItem={handleEditItem} 
+              onViewItem={handleViewItem} 
+            />
+          </TabsContent>
+          
+          <TabsContent value="retail" className="mt-4">
+            <InventoryList 
+              registerType="Retail" 
+              items={retailInventory} 
+              onAddItem={() => setOpen(true)} 
+              onEditItem={handleEditItem} 
+              onViewItem={handleViewItem} 
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
