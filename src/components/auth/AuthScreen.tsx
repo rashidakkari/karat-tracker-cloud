@@ -1,18 +1,28 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const AuthScreen: React.FC = () => {
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, user } = useAuth();
   const [password, setPassword] = useState("");
   const [showHint, setShowHint] = useState(false);
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (user?.isAuthenticated) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(password);
+    const success = await login(password);
+    if (success) {
+      navigate("/dashboard");
+    }
   };
 
   return (
