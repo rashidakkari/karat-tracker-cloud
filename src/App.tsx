@@ -10,6 +10,7 @@ import Inventory from "./pages/Inventory";
 import Transactions from "./pages/Transactions";
 import Calculator from "./pages/Calculator";
 import Reports from "./pages/Reports";
+import Finance from "./pages/Finance";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/calculator" element={<Calculator />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/finance" element={<Finance />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
