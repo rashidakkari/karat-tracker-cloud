@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { InventoryItem, ItemCategory, GoldPurity } from '@/models/inventory';
 import { WeightUnit } from '@/utils/goldCalculations';
@@ -72,15 +73,16 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
   };
 
   return (
-    <Card className="max-w-2xl mx-auto shadow-lg">
-      <CardHeader className="bg-secondary rounded-t-lg">
+    <Card className="shadow-lg max-h-[80vh] overflow-y-auto">
+      <CardHeader className="bg-secondary rounded-t-lg sticky top-0 z-10">
         <CardTitle className="text-xl">
           {isEditing ? 'Edit Inventory Item' : 'Add New Inventory Item'}
         </CardTitle>
       </CardHeader>
       <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4 pt-6">
-          <div className="grid grid-cols-2 gap-4">
+        <CardContent className="space-y-4 pt-4">
+          {/* Essential Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Item Name*</Label>
               <Input
@@ -91,17 +93,6 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
               />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="barcode">Barcode/QR (Optional)</Label>
-              <Input
-                id="barcode"
-                value={formData.barcode || ''}
-                onChange={(e) => handleChange('barcode', e.target.value)}
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="category">Category*</Label>
               <Select
@@ -115,6 +106,38 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
                   <SelectItem value="Bars">Bars</SelectItem>
                   <SelectItem value="Coins">Coins</SelectItem>
                   <SelectItem value="Jewelry">Jewelry</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {/* Weight and Purity */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="weight">Weight*</Label>
+              <Input
+                id="weight"
+                type="number"
+                step="0.001"
+                min="0.001"
+                value={formData.weight || ''}
+                onChange={(e) => handleChange('weight', parseFloat(e.target.value))}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="weightUnit">Unit*</Label>
+              <Select
+                value={formData.weightUnit as string}
+                onValueChange={(value) => handleChange('weightUnit', value as WeightUnit)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="g">Grams (g)</SelectItem>
+                  <SelectItem value="oz">Troy Ounces (oz)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -139,7 +162,10 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
                 </SelectContent>
               </Select>
             </div>
-            
+          </div>
+          
+          {/* Quantity and Cost */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="quantity">Quantity*</Label>
               <Input
@@ -151,41 +177,7 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
                 required
               />
             </div>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="weight">Weight*</Label>
-              <Input
-                id="weight"
-                type="number"
-                step="0.001"
-                min="0.001"
-                value={formData.weight || ''}
-                onChange={(e) => handleChange('weight', parseFloat(e.target.value))}
-                required
-              />
-            </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="weightUnit">Unit*</Label>
-              <Select
-                value={formData.weightUnit as string}
-                onValueChange={(value) => handleChange('weightUnit', value as WeightUnit)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select unit" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="g">Grams (g)</SelectItem>
-                  <SelectItem value="kg">Kilograms (kg)</SelectItem>
-                  <SelectItem value="oz">Troy Ounces (oz)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="costPrice">Cost Price</Label>
               <Input
@@ -217,7 +209,8 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          {/* Optional Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="location">Storage Location</Label>
               <Input
@@ -243,17 +236,20 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
               id="notes"
               value={formData.notes || ''}
               onChange={(e) => handleChange('notes', e.target.value)}
-              className="min-h-24"
+              className="min-h-20"
             />
           </div>
         </CardContent>
         
-        <CardFooter className="flex justify-between border-t p-4">
-          <Button variant="outline" onClick={onCancel}>
+        <CardFooter className="flex justify-between border-t p-4 bg-gray-50 sticky bottom-0">
+          <Button variant="outline" onClick={onCancel} type="button">
             Cancel
           </Button>
-          <Button type="submit" className="bg-gold hover:bg-gold-dark">
-            {isEditing ? 'Update Item' : 'Add Item'}
+          <Button 
+            type="submit" 
+            className="bg-amber-500 hover:bg-amber-600 text-white"
+          >
+            {isEditing ? 'Update Item' : 'Save Item'}
           </Button>
         </CardFooter>
       </form>

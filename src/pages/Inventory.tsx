@@ -4,7 +4,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import InventoryList from "@/components/inventory/InventoryList";
 import { Button } from "@/components/ui/button";
 import InventoryForm from "@/components/inventory/InventoryForm";
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PlusIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { InventoryItem as ModelInventoryItem, ItemCategory } from "@/models/inventory";
@@ -93,16 +93,21 @@ const Inventory = () => {
                 <PlusIcon className="mr-2 h-4 w-4" /> Add Item
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogTitle>Add New Inventory Item</DialogTitle>
-              <InventoryForm 
-                item={editingItem || undefined}
-                onSave={handleSaveItem} 
-                onCancel={() => {
-                  setOpen(false);
-                  setEditingItem(null);
-                }} 
-              />
+            <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-hidden p-0">
+              <DialogTitle className="p-6 pb-2">Add New Inventory Item</DialogTitle>
+              <DialogDescription className="px-6 pb-0 text-sm text-muted-foreground">
+                Fill in the item details and click Save to add it to your inventory.
+              </DialogDescription>
+              <div className="mt-2">
+                <InventoryForm 
+                  item={editingItem || undefined}
+                  onSave={handleSaveItem} 
+                  onCancel={() => {
+                    setOpen(false);
+                    setEditingItem(null);
+                  }} 
+                />
+              </div>
             </DialogContent>
           </Dialog>
         </div>
