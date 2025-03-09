@@ -4,7 +4,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import InventoryList from "@/components/inventory/InventoryList";
 import { Button } from "@/components/ui/button";
 import InventoryForm from "@/components/inventory/InventoryForm";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { PlusIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { InventoryItem as ModelInventoryItem, ItemCategory } from "@/models/inventory";
