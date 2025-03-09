@@ -7,8 +7,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { convertTo24K } from '@/utils/goldCalculations';
-import { Search, Filter, PlusCircle } from 'lucide-react';
+import { Search, Filter, PlusCircle, Trash2, Edit, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger 
+} from "@/components/ui/alert-dialog";
 
 interface InventoryListProps {
   registerType: RegisterType;
@@ -16,6 +27,7 @@ interface InventoryListProps {
   onAddItem: () => void;
   onEditItem: (item: InventoryItem) => void;
   onViewItem: (item: InventoryItem) => void;
+  onDeleteItem: (id: string) => void;
 }
 
 const InventoryList: React.FC<InventoryListProps> = ({
@@ -23,10 +35,14 @@ const InventoryList: React.FC<InventoryListProps> = ({
   items,
   onAddItem,
   onEditItem,
-  onViewItem
+  onViewItem,
+  onDeleteItem
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<string>('all');
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+
+  console.log(`${registerType} Inventory Items:`, items);
 
   const filteredItems = items.filter(item => {
     // Apply search term filter
@@ -42,11 +58,13 @@ const InventoryList: React.FC<InventoryListProps> = ({
     return matchesSearch && matchesFilter;
   });
 
+  console.log("Filtered Items:", filteredItems);
+
   const registerTitle = registerType === 'Wholesale' ? 'Wholesale Inventory (Bars)' : 'Retail Inventory (Jewelry)';
   
   const getTotalValue = (items: InventoryItem[]): number => {
     return items.reduce((total, item) => {
-      const weight24K = convertTo24K(item.weight, item.purity);
+      const weight24K = item.equivalent24k || convertTo24K(item.weight, item.purity);
       return total + (weight24K * (item.quantity || 1));
     }, 0);
   };
@@ -55,6 +73,13 @@ const InventoryList: React.FC<InventoryListProps> = ({
     return items.filter(item => 
       item.category && item.category.toLowerCase() === category.toLowerCase()
     ).length;
+  };
+
+  const handleDeleteConfirm = () => {
+    if (itemToDelete) {
+      onDeleteItem(itemToDelete);
+      setItemToDelete(null);
+    }
   };
 
   return (
@@ -152,7 +177,7 @@ const InventoryList: React.FC<InventoryListProps> = ({
                     </TableCell>
                     <TableCell>{item.quantity}</TableCell>
                     <TableCell className="text-right">
-                      {(convertTo24K(item.weight, item.purity) * (item.quantity || 1)).toFixed(3)}g
+                      {((item.equivalent24k || convertTo24K(item.weight, item.purity)) * (item.quantity || 1)).toFixed(3)}g
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -160,15 +185,41 @@ const InventoryList: React.FC<InventoryListProps> = ({
                         size="sm"
                         onClick={() => onViewItem(item)}
                       >
-                        View
+                        <Eye className="h-4 w-4 mr-1" /> View
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => onEditItem(item)}
                       >
-                        Edit
+                        <Edit className="h-4 w-4 mr-1" /> Edit
                       </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                            onClick={() => setItemToDelete(item.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" /> Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete this inventory item. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-500 hover:bg-red-600">
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                 ))

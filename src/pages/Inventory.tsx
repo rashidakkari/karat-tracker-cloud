@@ -1,9 +1,10 @@
+
 import React, { useState } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import InventoryList from "@/components/inventory/InventoryList";
 import { Button } from "@/components/ui/button";
 import InventoryForm from "@/components/inventory/InventoryForm";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { PlusIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { InventoryItem as ModelInventoryItem, ItemCategory } from "@/models/inventory";
@@ -16,13 +17,16 @@ const Inventory = () => {
   const [activeTab, setActiveTab] = useState<"wholesale" | "retail">("wholesale");
 
   const handleSaveItem = (item: any) => {
+    // Convert category to lowercase for consistency
     if (item.category === "Bars") item.category = "bars";
     if (item.category === "Coins") item.category = "coins";
     if (item.category === "Jewelry") item.category = "jewelry";
     
+    // Set the type based on active tab
     item.type = activeTab;
     
-    if (item.id) {
+    // Check if we're updating or adding
+    if (item.id && inventory.some(i => i.id === item.id)) {
       updateInventoryItem(item.id, item);
     } else {
       addInventoryItem(item);
@@ -52,7 +56,7 @@ const Inventory = () => {
           weightUnit: item.weightUnit === "kg" ? "g" : item.weightUnit as "g" | "oz" | "tola" | "baht", 
           purity: item.purity,
           quantity: item.quantity,
-          costPrice: 0,
+          costPrice: item.costPrice || 0,
           sellingPrice: 0,
           equivalent24k: item.equivalent24k || 0,
           description: item.description || '',
@@ -61,17 +65,16 @@ const Inventory = () => {
           createdAt: new Date(),
           updatedAt: new Date()
         };
-        
-        if ('costPrice' in item && typeof item.costPrice === 'number') {
-          mappedItem.costPrice = item.costPrice;
-        }
-        
         return mappedItem;
       });
   };
 
   const wholesaleInventory = mapAndFilterInventory("wholesale");
   const retailInventory = mapAndFilterInventory("retail");
+
+  console.log("Current inventory:", inventory);
+  console.log("Filtered wholesale inventory:", wholesaleInventory);
+  console.log("Filtered retail inventory:", retailInventory);
 
   return (
     <AppLayout>
@@ -85,6 +88,10 @@ const Inventory = () => {
               </Button>
             </DialogTrigger>
             <DialogContent className="p-0 max-w-3xl max-h-[90vh] w-[90vw]">
+              <DialogHeader className="sr-only">
+                <DialogTitle>{editingItem ? 'Edit Item' : 'Add New Item'}</DialogTitle>
+                <DialogDescription>Fill out the form to add or update an inventory item</DialogDescription>
+              </DialogHeader>
               <InventoryForm 
                 item={editingItem || undefined}
                 onSave={handleSaveItem} 
@@ -109,7 +116,8 @@ const Inventory = () => {
               items={wholesaleInventory} 
               onAddItem={() => setOpen(true)} 
               onEditItem={handleEditItem} 
-              onViewItem={handleViewItem} 
+              onViewItem={handleViewItem}
+              onDeleteItem={removeInventoryItem}
             />
           </TabsContent>
           
@@ -119,7 +127,8 @@ const Inventory = () => {
               items={retailInventory} 
               onAddItem={() => setOpen(true)} 
               onEditItem={handleEditItem} 
-              onViewItem={handleViewItem} 
+              onViewItem={handleViewItem}
+              onDeleteItem={removeInventoryItem}
             />
           </TabsContent>
         </Tabs>

@@ -28,6 +28,7 @@ export const createInventoryService = (
   setInventory: React.Dispatch<React.SetStateAction<InventoryItem[]>>
 ) => {
   const addInventoryItem = (item: Omit<InventoryItem, "id" | "dateAdded" | "equivalent24k">) => {
+    // Ensure we have all required fields
     const newItem: InventoryItem = {
       ...item,
       id: generateId(),
@@ -35,13 +36,22 @@ export const createInventoryService = (
       equivalent24k: calculateEquivalent24k(item.weight, item.purity)
     };
     
-    setInventory(prev => [...prev, newItem]);
+    console.log("Adding new inventory item:", newItem);
+    
+    setInventory(prev => {
+      const updated = [...prev, newItem];
+      console.log("Updated inventory:", updated);
+      return updated;
+    });
+    
     toast.success(`Added ${item.name} to inventory`);
   };
   
   const updateInventoryItem = (id: string, updates: Partial<InventoryItem>) => {
-    setInventory(prev => 
-      prev.map(item => {
+    console.log("Updating inventory item:", id, updates);
+    
+    setInventory(prev => {
+      const updated = prev.map(item => {
         if (item.id === id) {
           const updatedItem = { ...item, ...updates };
           // Recalculate 24K equivalent if weight or purity changed
@@ -54,13 +64,24 @@ export const createInventoryService = (
           return updatedItem;
         }
         return item;
-      })
-    );
+      });
+      
+      console.log("Updated inventory after update:", updated);
+      return updated;
+    });
+    
     toast.success("Inventory item updated");
   };
   
   const removeInventoryItem = (id: string) => {
-    setInventory(prev => prev.filter(item => item.id !== id));
+    console.log("Removing inventory item:", id);
+    
+    setInventory(prev => {
+      const updated = prev.filter(item => item.id !== id);
+      console.log("Updated inventory after removal:", updated);
+      return updated;
+    });
+    
     toast.success("Inventory item removed");
   };
 
