@@ -1,10 +1,9 @@
-
 import React, { useState } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import InventoryList from "@/components/inventory/InventoryList";
 import { Button } from "@/components/ui/button";
 import InventoryForm from "@/components/inventory/InventoryForm";
-import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { PlusIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { InventoryItem as ModelInventoryItem, ItemCategory } from "@/models/inventory";
@@ -16,14 +15,11 @@ const Inventory = () => {
   const [editingItem, setEditingItem] = useState<ModelInventoryItem | null>(null);
   const [activeTab, setActiveTab] = useState<"wholesale" | "retail">("wholesale");
 
-  // Handle saving an inventory item
   const handleSaveItem = (item: any) => {
-    // Convert the category to lowercase if needed
     if (item.category === "Bars") item.category = "bars";
     if (item.category === "Coins") item.category = "coins";
     if (item.category === "Jewelry") item.category = "jewelry";
     
-    // Set the type based on the active tab
     item.type = activeTab;
     
     if (item.id) {
@@ -42,15 +38,12 @@ const Inventory = () => {
 
   const handleViewItem = (item: ModelInventoryItem) => {
     console.log("Viewing item:", item);
-    // You could implement a view modal here
   };
 
-  // Map AppContext inventory items to ModelInventoryItem type and filter by type
   const mapAndFilterInventory = (type: "wholesale" | "retail") => {
     return inventory
       .filter(item => item.type === type)
       .map(item => {
-        // Define the mapped item with the correct type structure
         const mappedItem: ModelInventoryItem = {
           id: item.id,
           name: item.name,
@@ -59,8 +52,7 @@ const Inventory = () => {
           weightUnit: item.weightUnit === "kg" ? "g" : item.weightUnit as "g" | "oz" | "tola" | "baht", 
           purity: item.purity,
           quantity: item.quantity,
-          // The costPrice field in the model is required
-          costPrice: 0, // Default value
+          costPrice: 0,
           sellingPrice: 0,
           equivalent24k: item.equivalent24k || 0,
           description: item.description || '',
@@ -70,7 +62,6 @@ const Inventory = () => {
           updatedAt: new Date()
         };
         
-        // If the item from context has costPrice, use it with proper type checking
         if ('costPrice' in item && typeof item.costPrice === 'number') {
           mappedItem.costPrice = item.costPrice;
         }
@@ -93,21 +84,15 @@ const Inventory = () => {
                 <PlusIcon className="mr-2 h-4 w-4" /> Add Item
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-hidden p-0">
-              <DialogTitle className="p-6 pb-2">Add New Inventory Item</DialogTitle>
-              <DialogDescription className="px-6 pb-0 text-sm text-muted-foreground">
-                Fill in the item details and click Save to add it to your inventory.
-              </DialogDescription>
-              <div className="mt-2">
-                <InventoryForm 
-                  item={editingItem || undefined}
-                  onSave={handleSaveItem} 
-                  onCancel={() => {
-                    setOpen(false);
-                    setEditingItem(null);
-                  }} 
-                />
-              </div>
+            <DialogContent className="p-0 max-w-3xl max-h-[90vh] w-[90vw]">
+              <InventoryForm 
+                item={editingItem || undefined}
+                onSave={handleSaveItem} 
+                onCancel={() => {
+                  setOpen(false);
+                  setEditingItem(null);
+                }} 
+              />
             </DialogContent>
           </Dialog>
         </div>

@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
+import { Save } from 'lucide-react';
 
 interface InventoryFormProps {
   item?: InventoryItem;
@@ -73,14 +74,14 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
   };
 
   return (
-    <Card className="shadow-lg max-h-[80vh] overflow-y-auto">
-      <CardHeader className="bg-secondary rounded-t-lg sticky top-0 z-10">
+    <Card className="max-h-[80vh] overflow-hidden flex flex-col">
+      <CardHeader className="bg-secondary rounded-t-lg sticky top-0 z-10 p-4">
         <CardTitle className="text-xl">
           {isEditing ? 'Edit Inventory Item' : 'Add New Inventory Item'}
         </CardTitle>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4 pt-4">
+      <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
+        <CardContent className="space-y-4 p-4 overflow-y-auto flex-1">
           {/* Essential Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -241,14 +242,16 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
           </div>
         </CardContent>
         
-        <CardFooter className="flex justify-between border-t p-4 bg-gray-50 sticky bottom-0">
+        <CardFooter className="flex justify-between bg-muted/30 border-t p-4 sticky bottom-0 z-10">
           <Button variant="outline" onClick={onCancel} type="button">
             Cancel
           </Button>
           <Button 
             type="submit" 
             className="bg-amber-500 hover:bg-amber-600 text-white"
+            size="lg"
           >
+            <Save className="mr-2 h-4 w-4" />
             {isEditing ? 'Update Item' : 'Save Item'}
           </Button>
         </CardFooter>

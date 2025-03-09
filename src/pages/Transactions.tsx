@@ -96,7 +96,7 @@ const Transactions = () => {
                 <PlusIcon className="mr-2 h-4 w-4" /> New Transaction
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="p-0 max-w-4xl max-h-[90vh] w-[90vw]">
               <TransactionForm 
                 transaction={undefined}
                 inventoryItems={mappedInventory}

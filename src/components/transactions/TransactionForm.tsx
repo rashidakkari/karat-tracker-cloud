@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Transaction, TransactionItem, Payment, TransactionType } from '@/models/transactions';
 import { InventoryItem } from '@/models/inventory';
@@ -18,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
-import { PlusCircle, MinusCircle, Trash } from 'lucide-react';
+import { PlusCircle, MinusCircle, Trash, Save } from 'lucide-react';
 
 interface TransactionFormProps {
   transaction?: Transaction;
@@ -197,14 +198,14 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   };
 
   return (
-    <Card className="max-w-4xl mx-auto shadow-lg">
-      <CardHeader className="bg-secondary rounded-t-lg">
+    <Card className="shadow-lg max-h-[80vh] overflow-hidden flex flex-col">
+      <CardHeader className="bg-secondary rounded-t-lg sticky top-0 z-10 p-4">
         <CardTitle className="text-xl">
           {isEditing ? 'Edit Transaction' : 'New Transaction'}
         </CardTitle>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4 pt-6">
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+        <CardContent className="space-y-4 p-4 overflow-y-auto flex-1">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="type">Transaction Type*</Label>
@@ -390,17 +391,17 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                           </TableCell>
                           <TableCell>{item.quantity}</TableCell>
                           <TableCell className="text-right">
-                            {item.unitPrice.toFixed(2)} {item.currency}
+                            {item.unitPrice?.toFixed(2)} {item.currency}
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {item.totalPrice.toFixed(2)} {item.currency}
+                            {item.totalPrice?.toFixed(2)} {item.currency}
                           </TableCell>
                           <TableCell>
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
-                              onClick={() => removeItem(item.id)}
+                              onClick={() => removeItem(item.id as string)}
                             >
                               <MinusCircle className="h-4 w-4 text-red-500" />
                             </Button>
@@ -561,17 +562,22 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
               id="notes"
               value={formData.notes || ''}
               onChange={(e) => handleChange('notes', e.target.value)}
-              className="min-h-24"
+              className="min-h-20"
             />
           </div>
         </CardContent>
         
-        <CardFooter className="flex justify-between border-t p-4">
-          <Button variant="outline" onClick={onCancel}>
+        <CardFooter className="flex justify-between bg-muted/30 border-t p-4 sticky bottom-0 z-10">
+          <Button variant="outline" onClick={onCancel} type="button">
             Cancel
           </Button>
-          <Button type="submit" className="bg-gold hover:bg-gold-dark">
-            {isEditing ? 'Update Transaction' : 'Save Transaction'}
+          <Button 
+            type="submit" 
+            className="bg-amber-500 hover:bg-amber-600 text-white"
+            size="lg"
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {isEditing ? 'Update Transaction' : 'Complete Transaction'}
           </Button>
         </CardFooter>
       </form>
