@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Transaction } from '@/models/transactions';
 import { Badge } from '@/components/ui/badge';
@@ -6,18 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { 
-  Search, 
-  PlusCircle, 
-  Calendar, 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  CreditCard,
-  Receipt
-} from 'lucide-react';
+import { Search, PlusCircle, Calendar, ArrowUpRight, ArrowDownRight, CreditCard, Receipt } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-
 interface TransactionListProps {
   transactions: Transaction[];
   onCreateTransaction: () => void;
@@ -25,7 +15,6 @@ interface TransactionListProps {
   onEditTransaction: (transaction: Transaction) => void;
   onPrintReceipt: (transaction: Transaction) => void;
 }
-
 const TransactionList: React.FC<TransactionListProps> = ({
   transactions,
   onCreateTransaction,
@@ -36,26 +25,17 @@ const TransactionList: React.FC<TransactionListProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<string>('all');
   const [registerFilter, setRegisterFilter] = useState<string>('all');
-
   const filteredTransactions = transactions.filter(transaction => {
     // Apply search term
-    const matchesSearch = 
-      transaction.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.id.toLowerCase().includes(searchTerm.toLowerCase());
-      
+    const matchesSearch = transaction.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || transaction.id.toLowerCase().includes(searchTerm.toLowerCase());
+
     // Apply transaction type filter
-    const matchesTypeFilter = 
-      filter === 'all' || 
-      transaction.type.toLowerCase() === filter.toLowerCase();
-    
+    const matchesTypeFilter = filter === 'all' || transaction.type.toLowerCase() === filter.toLowerCase();
+
     // Apply register filter
-    const matchesRegisterFilter = 
-      registerFilter === 'all' || 
-      transaction.registerType.toLowerCase() === registerFilter.toLowerCase();
-    
+    const matchesRegisterFilter = registerFilter === 'all' || transaction.registerType.toLowerCase() === registerFilter.toLowerCase();
     return matchesSearch && matchesTypeFilter && matchesRegisterFilter;
   }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
   const getTransactionIcon = (type: string) => {
     switch (type.toLowerCase()) {
       case 'buy':
@@ -68,7 +48,6 @@ const TransactionList: React.FC<TransactionListProps> = ({
         return null;
     }
   };
-
   const getTransactionStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'completed':
@@ -81,9 +60,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
-
-  return (
-    <Card className="shadow-md">
+  return <Card className="shadow-md">
       <CardHeader className="bg-secondary rounded-t-lg pb-2">
         <div className="flex justify-between items-center">
           <div>
@@ -101,77 +78,30 @@ const TransactionList: React.FC<TransactionListProps> = ({
         <div className="flex flex-wrap gap-2 mb-4">
           <div className="relative flex-1 min-w-[300px]">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by customer name or ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8"
-            />
+            <Input placeholder="Search by customer name or ID..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-8" />
           </div>
           <div className="flex flex-wrap gap-2">
-            <Badge 
-              className={cn(
-                "px-3 py-1 cursor-pointer", 
-                filter === 'all' ? "bg-gold hover:bg-gold-dark" : "bg-secondary text-primary hover:bg-secondary/80"
-              )}
-              onClick={() => setFilter('all')}
-            >
+            <Badge className={cn("px-3 py-1 cursor-pointer", filter === 'all' ? "bg-gold hover:bg-gold-dark" : "bg-secondary text-primary hover:bg-secondary/80")} onClick={() => setFilter('all')}>
               All Types
             </Badge>
-            <Badge 
-              className={cn(
-                "px-3 py-1 cursor-pointer", 
-                filter === 'buy' ? "bg-gold hover:bg-gold-dark" : "bg-secondary text-primary hover:bg-secondary/80"
-              )}
-              onClick={() => setFilter('buy')}
-            >
+            <Badge className={cn("px-3 py-1 cursor-pointer", filter === 'buy' ? "bg-gold hover:bg-gold-dark" : "bg-secondary text-primary hover:bg-secondary/80")} onClick={() => setFilter('buy')}>
               Buy
             </Badge>
-            <Badge 
-              className={cn(
-                "px-3 py-1 cursor-pointer", 
-                filter === 'sell' ? "bg-gold hover:bg-gold-dark" : "bg-secondary text-primary hover:bg-secondary/80"
-              )}
-              onClick={() => setFilter('sell')}
-            >
+            <Badge className={cn("px-3 py-1 cursor-pointer", filter === 'sell' ? "bg-gold hover:bg-gold-dark" : "bg-secondary text-primary hover:bg-secondary/80")} onClick={() => setFilter('sell')}>
               Sell
             </Badge>
-            <Badge 
-              className={cn(
-                "px-3 py-1 cursor-pointer", 
-                filter === 'expense' ? "bg-gold hover:bg-gold-dark" : "bg-secondary text-primary hover:bg-secondary/80"
-              )}
-              onClick={() => setFilter('expense')}
-            >
+            <Badge className={cn("px-3 py-1 cursor-pointer", filter === 'expense' ? "bg-gold hover:bg-gold-dark" : "bg-secondary text-primary hover:bg-secondary/80")} onClick={() => setFilter('expense')}>
               Expense
             </Badge>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Badge 
-              className={cn(
-                "px-3 py-1 cursor-pointer", 
-                registerFilter === 'all' ? "bg-gold hover:bg-gold-dark" : "bg-secondary text-primary hover:bg-secondary/80"
-              )}
-              onClick={() => setRegisterFilter('all')}
-            >
+            <Badge className={cn("px-3 py-1 cursor-pointer", registerFilter === 'all' ? "bg-gold hover:bg-gold-dark" : "bg-secondary text-primary hover:bg-secondary/80")} onClick={() => setRegisterFilter('all')}>
               All Registers
             </Badge>
-            <Badge 
-              className={cn(
-                "px-3 py-1 cursor-pointer", 
-                registerFilter === 'wholesale' ? "bg-gold hover:bg-gold-dark" : "bg-secondary text-primary hover:bg-secondary/80"
-              )}
-              onClick={() => setRegisterFilter('wholesale')}
-            >
+            <Badge className={cn("px-3 py-1 cursor-pointer", registerFilter === 'wholesale' ? "bg-gold hover:bg-gold-dark" : "bg-secondary text-primary hover:bg-secondary/80")} onClick={() => setRegisterFilter('wholesale')}>
               Wholesale
             </Badge>
-            <Badge 
-              className={cn(
-                "px-3 py-1 cursor-pointer", 
-                registerFilter === 'retail' ? "bg-gold hover:bg-gold-dark" : "bg-secondary text-primary hover:bg-secondary/80"
-              )}
-              onClick={() => setRegisterFilter('retail')}
-            >
+            <Badge className={cn("px-3 py-1 cursor-pointer", registerFilter === 'retail' ? "bg-gold hover:bg-gold-dark" : "bg-secondary text-primary hover:bg-secondary/80")} onClick={() => setRegisterFilter('retail')}>
               Retail
             </Badge>
           </div>
@@ -192,9 +122,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTransactions.length > 0 ? (
-                filteredTransactions.map((transaction) => (
-                  <TableRow key={transaction.id} className="hover:bg-secondary/20">
+              {filteredTransactions.length > 0 ? filteredTransactions.map(transaction => <TableRow key={transaction.id} className="hover:bg-secondary/20">
                     <TableCell>
                       <div className="flex items-center">
                         <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -223,47 +151,26 @@ const TransactionList: React.FC<TransactionListProps> = ({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onViewTransaction(transaction)}
-                          title="View details"
-                        >
+                        <Button variant="ghost" size="icon" onClick={() => onViewTransaction(transaction)} title="View details">
                           <Search className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onEditTransaction(transaction)}
-                          title="Edit transaction"
-                        >
+                        <Button variant="ghost" size="icon" onClick={() => onEditTransaction(transaction)} title="Edit transaction">
                           <CreditCard className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onPrintReceipt(transaction)}
-                          title="Print receipt"
-                        >
+                        <Button variant="ghost" size="icon" onClick={() => onPrintReceipt(transaction)} title="Print receipt" className="add the function of these bottons">
                           <Receipt className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
+                  </TableRow>) : <TableRow>
                   <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
                     No transactions found. Create a new transaction or try a different search.
                   </TableCell>
-                </TableRow>
-              )}
+                </TableRow>}
             </TableBody>
           </Table>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
-
 export default TransactionList;
