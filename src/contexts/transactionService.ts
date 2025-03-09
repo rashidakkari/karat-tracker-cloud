@@ -26,7 +26,8 @@ export const createTransactionService = (
       cashAmount: transaction.payments?.find((p: any) => p.method === 'Cash')?.amount || 0,
       goldAmount: transaction.payments?.find((p: any) => p.method === 'Gold')?.amount || 0,
       customer: transaction.customerName || '',
-      notes: transaction.notes || ''
+      notes: transaction.notes || '',
+      customerPhone: transaction.customerPhone || ''
     };
     
     console.log("Formatted transaction:", newTransaction);
@@ -42,20 +43,34 @@ export const createTransactionService = (
         if (!inventoryItem) return;
         
         const transactionQuantity = transactionItem.quantity || 0;
+        const transactionWeight = transactionItem.weight || 0;
+        
+        // Calculate weight per unit for proportional weight adjustment
+        const weightPerUnit = inventoryItem.weight / inventoryItem.quantity;
+        
+        // Calculate total weight being transacted
+        // If custom weight was specified, use that, otherwise calculate based on quantity
+        const totalWeightChange = transactionItem.weight 
+          ? transactionItem.weight 
+          : transactionQuantity * weightPerUnit;
+        
+        console.log(`Inventory update - Item: ${inventoryItem.name}, Current Weight: ${inventoryItem.weight}, Weight Change: ${totalWeightChange}`);
         
         if (transaction.type === "Buy" || transaction.type === "buy") {
           // Adding to inventory (buying from customer)
           updateInventoryItem(inventoryItem.id, { 
-            quantity: inventoryItem.quantity + transactionQuantity 
+            quantity: inventoryItem.quantity + transactionQuantity,
+            weight: inventoryItem.weight + totalWeightChange
           });
-          console.log(`Increased inventory for ${inventoryItem.name} by ${transactionQuantity}`);
+          console.log(`Increased inventory for ${inventoryItem.name} by ${transactionQuantity} units and ${totalWeightChange}${inventoryItem.weightUnit}`);
         } else if (transaction.type === "Sell" || transaction.type === "sell") {
           // Removing from inventory (selling to customer)
           if (inventoryItem.quantity >= transactionQuantity) {
             updateInventoryItem(inventoryItem.id, { 
-              quantity: inventoryItem.quantity - transactionQuantity 
+              quantity: inventoryItem.quantity - transactionQuantity,
+              weight: Math.max(0, inventoryItem.weight - totalWeightChange)
             });
-            console.log(`Decreased inventory for ${inventoryItem.name} by ${transactionQuantity}`);
+            console.log(`Decreased inventory for ${inventoryItem.name} by ${transactionQuantity} units and ${totalWeightChange}${inventoryItem.weightUnit}`);
           } else {
             toast.error(`Not enough quantity in inventory for ${inventoryItem.name}`);
           }
@@ -65,16 +80,23 @@ export const createTransactionService = (
       // Handle legacy transaction format
       const item = inventory.find(i => i.id === transaction.itemId);
       if (item) {
+        // Calculate weight per unit for proportional weight adjustment
+        const weightPerUnit = item.weight / item.quantity;
+        // Calculate total weight being transacted
+        const totalWeightChange = transaction.quantity * weightPerUnit;
+        
         if (transaction.type === "buy") {
           // Adding to inventory
           updateInventoryItem(item.id, { 
-            quantity: item.quantity + transaction.quantity 
+            quantity: item.quantity + transaction.quantity,
+            weight: item.weight + totalWeightChange
           });
         } else if (transaction.type === "sell") {
           // Removing from inventory
           if (item.quantity >= transaction.quantity) {
             updateInventoryItem(item.id, { 
-              quantity: item.quantity - transaction.quantity 
+              quantity: item.quantity - transaction.quantity,
+              weight: Math.max(0, item.weight - totalWeightChange)
             });
           } else {
             toast.error("Not enough quantity in inventory");
@@ -109,15 +131,22 @@ export const createTransactionService = (
     // Revert inventory changes
     const item = inventory.find(i => i.id === transaction.itemId);
     if (item) {
+      // Calculate weight per unit for proportional weight adjustment
+      const weightPerUnit = item.weight / item.quantity;
+      // Calculate total weight being transacted
+      const totalWeightChange = transaction.quantity * weightPerUnit;
+      
       if (transaction.type === "buy") {
         // Remove from inventory what was added
         updateInventoryItem(item.id, { 
-          quantity: Math.max(0, item.quantity - transaction.quantity)
+          quantity: Math.max(0, item.quantity - transaction.quantity),
+          weight: Math.max(0, item.weight - totalWeightChange)
         });
       } else if (transaction.type === "sell") {
         // Add back to inventory what was sold
         updateInventoryItem(item.id, { 
-          quantity: item.quantity + transaction.quantity 
+          quantity: item.quantity + transaction.quantity,
+          weight: item.weight + totalWeightChange
         });
       }
     }
