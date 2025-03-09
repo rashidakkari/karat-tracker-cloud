@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Transaction, TransactionItem, Payment, TransactionType } from '@/models/transactions';
 import { InventoryItem } from '@/models/inventory';
 import { CurrencyCode, GoldPurity, WeightUnit } from '@/utils/goldCalculations';
@@ -19,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
-import { PlusCircle, MinusCircle, Trash, Save } from 'lucide-react';
+import { PlusCircle, MinusCircle, Trash, Save, Search, QrCode } from 'lucide-react';
 
 interface TransactionFormProps {
   transaction?: Transaction;
@@ -62,6 +62,10 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   const [selectedItemId, setSelectedItemId] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
   const [activeTab, setActiveTab] = useState<string>('items');
+  const [searchText, setSearchText] = useState<string>('');
+  const [manualWeight, setManualWeight] = useState<number | undefined>(undefined);
+  const [customUnitPrice, setCustomUnitPrice] = useState<number | undefined>(undefined);
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
   
   const isEditing = !!transaction;
 
@@ -83,6 +87,30 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     }));
   }, [selectedItems, payments]);
 
+  const handleSearchByIdOrBarcode = () => {
+    if (!searchText.trim()) {
+      toast.error('Please enter an item ID or scan a barcode');
+      return;
+    }
+
+    const foundItem = inventoryItems.find(
+      item => item.id === searchText.trim() || item.barcode === searchText.trim()
+    );
+
+    if (foundItem) {
+      setSelectedItemId(foundItem.id);
+      toast.success(`Found: ${foundItem.name}`);
+    } else {
+      toast.error('No item found with that ID or barcode');
+    }
+  };
+
+  const handleBarcodeScanned = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearchByIdOrBarcode();
+    }
+  };
+
   const addItem = () => {
     if (!selectedItemId) {
       toast.error('Please select an item');
@@ -100,18 +128,32 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       return;
     }
     
+    // Use manual weight if provided, otherwise use inventory item weight
+    const itemWeight = manualWeight !== undefined ? manualWeight : inventoryItem.weight;
+    
+    if (itemWeight <= 0) {
+      toast.error('Weight must be greater than 0');
+      return;
+    }
+    
     let unitPrice = 0;
     const isBars = inventoryItem.category === 'Bars' || inventoryItem.category === 'Coins';
     const purity = inventoryItem.purity as GoldPurity;
     
-    if (formData.type === 'Buy') {
-      unitPrice = isBars 
-        ? calculateBarBuyingPrice(currentSpotPrice, inventoryItem.weight, purity as '999.9' | '995')
-        : calculateJewelryBuyingPrice(currentSpotPrice, inventoryItem.weight, purity);
+    if (customUnitPrice !== undefined && customUnitPrice > 0) {
+      // Use custom unit price if provided
+      unitPrice = customUnitPrice;
     } else {
-      unitPrice = isBars
-        ? calculateBarSellingPrice(currentSpotPrice, inventoryItem.weight, purity as '999.9' | '995', formData.commission || 0)
-        : calculateJewelrySellingPrice(currentSpotPrice, inventoryItem.weight, purity, formData.commission || 0);
+      // Calculate price based on formula
+      if (formData.type === 'Buy') {
+        unitPrice = isBars 
+          ? calculateBarBuyingPrice(currentSpotPrice, itemWeight, purity as '999.9' | '995')
+          : calculateJewelryBuyingPrice(currentSpotPrice, itemWeight, purity);
+      } else {
+        unitPrice = isBars
+          ? calculateBarSellingPrice(currentSpotPrice, itemWeight, purity as '999.9' | '995', formData.commission || 0)
+          : calculateJewelrySellingPrice(currentSpotPrice, itemWeight, purity, formData.commission || 0);
+      }
     }
     
     const totalPrice = unitPrice * quantity;
@@ -123,7 +165,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       name: inventoryItem.name,
       category: inventoryItem.category,
       purity: inventoryItem.purity,
-      weight: inventoryItem.weight,
+      weight: itemWeight, // Use the potentially modified weight
       weightUnit: inventoryItem.weightUnit,
       quantity: quantity,
       unitPrice: unitPrice,
@@ -136,6 +178,9 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     setSelectedItems([...selectedItems, newItem]);
     setSelectedItemId('');
     setQuantity(1);
+    setManualWeight(undefined);
+    setCustomUnitPrice(undefined);
+    setSearchText('');
   };
 
   const removeItem = (id: string) => {
@@ -195,6 +240,12 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     };
     
     onSave(finalTransaction);
+  };
+
+  const focusBarcodeInput = () => {
+    if (barcodeInputRef.current) {
+      barcodeInputRef.current.focus();
+    }
   };
 
   return (
@@ -331,6 +382,29 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
             </TabsList>
             
             <TabsContent value="items" className="space-y-4 pt-4">
+              {/* Item search by ID or barcode */}
+              <div className="flex items-end space-x-2 p-3 border rounded-md bg-secondary/10">
+                <div className="flex-1 space-y-2">
+                  <Label htmlFor="itemSearch">Search by Item ID or Barcode</Label>
+                  <div className="flex space-x-2">
+                    <Input
+                      id="itemSearch"
+                      ref={barcodeInputRef}
+                      value={searchText}
+                      onChange={(e) => setSearchText(e.target.value)}
+                      onKeyDown={handleBarcodeScanned}
+                      placeholder="Enter item ID or scan barcode"
+                    />
+                    <Button type="button" onClick={handleSearchByIdOrBarcode} variant="outline">
+                      <Search className="h-4 w-4 mr-1" /> Search
+                    </Button>
+                    <Button type="button" onClick={focusBarcodeInput} variant="outline">
+                      <QrCode className="h-4 w-4 mr-1" /> Scan
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
               <div className="flex items-end space-x-2">
                 <div className="flex-1 space-y-2">
                   <Label htmlFor="selectedItem">Select Item</Label>
@@ -361,10 +435,49 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                     onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
                   />
                 </div>
-                
+
                 <Button type="button" onClick={addItem} className="mb-0.5">
                   <PlusCircle className="h-4 w-4 mr-1" /> Add
                 </Button>
+              </div>
+              
+              {/* Manual weight and custom price inputs */}
+              <div className="grid grid-cols-2 gap-4 p-3 border rounded-md bg-secondary/10">
+                <div className="space-y-2">
+                  <Label htmlFor="manualWeight">
+                    Custom Weight (g) <span className="text-xs text-muted-foreground">(Optional)</span>
+                  </Label>
+                  <Input
+                    id="manualWeight"
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    value={manualWeight !== undefined ? manualWeight : ''}
+                    onChange={(e) => {
+                      const value = e.target.value !== '' ? parseFloat(e.target.value) : undefined;
+                      setManualWeight(value);
+                    }}
+                    placeholder="Override item weight if needed"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="customPrice">
+                    Custom Unit Price <span className="text-xs text-muted-foreground">(Optional)</span>
+                  </Label>
+                  <Input
+                    id="customPrice"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={customUnitPrice !== undefined ? customUnitPrice : ''}
+                    onChange={(e) => {
+                      const value = e.target.value !== '' ? parseFloat(e.target.value) : undefined;
+                      setCustomUnitPrice(value);
+                    }}
+                    placeholder="Override calculated price if needed"
+                  />
+                </div>
               </div>
               
               <div className="border rounded-md">
