@@ -13,30 +13,48 @@ import { toast } from "sonner";
 
 const Transactions = () => {
   const [open, setOpen] = useState(false);
-  const { transactions, inventory, financial, addTransaction } = useApp();
+  const [editingTransaction, setEditingTransaction] = useState<ModelTransaction | undefined>(undefined);
+  const { transactions, inventory, financial, addTransaction, updateTransaction } = useApp();
   
-  // Functions for transaction handling
+  // Function to view transaction details
   const handleViewTransaction = (transaction: ModelTransaction) => {
-    toast.info(`Viewing details for transaction: ${transaction.id}`);
-    console.log("View transaction", transaction);
+    console.log("Viewing transaction details:", transaction);
+    toast.info(`Viewing details for transaction: ${transaction.id.substring(0, 8)}`);
+    // In a full implementation, this might open a detailed view dialog
   };
   
+  // Function to edit a transaction
   const handleEditTransaction = (transaction: ModelTransaction) => {
-    toast.info(`Editing transaction: ${transaction.id}`);
-    console.log("Edit transaction", transaction);
-    // In a full implementation, you would set the editing transaction and open the form
+    console.log("Editing transaction:", transaction);
+    setEditingTransaction(transaction);
+    setOpen(true);
   };
   
+  // Function to print a receipt
   const handlePrintReceipt = (transaction: ModelTransaction) => {
-    toast.success(`Printing receipt for transaction: ${transaction.id}`);
-    console.log("Print receipt", transaction);
-    // In a full implementation, you would generate and print a receipt
+    console.log("Print receipt for transaction:", transaction);
+    // Actual printing is now handled in the TransactionList component
   };
 
+  // Function to save transaction (new or edited)
   const handleComplete = (transaction: any) => {
-    addTransaction(transaction);
-    toast.success("Transaction completed successfully");
+    if (editingTransaction) {
+      // Update existing transaction
+      updateTransaction(transaction.id, transaction);
+      toast.success("Transaction updated successfully");
+    } else {
+      // Add new transaction
+      addTransaction(transaction);
+      toast.success("Transaction completed successfully");
+    }
     setOpen(false);
+    setEditingTransaction(undefined);
+  };
+
+  // Function to cancel transaction form
+  const handleCancel = () => {
+    setOpen(false);
+    setEditingTransaction(undefined);
   };
 
   // Map the AppContext transactions to match the model Transaction type
@@ -44,6 +62,7 @@ const Transactions = () => {
     id: t.id,
     type: t.type,
     customerName: t.customer || "Unknown",
+    customerPhone: t.customerPhone || "",
     date: t.dateTime,
     items: [],
     totalAmount: t.totalPrice || 0,
@@ -98,18 +117,21 @@ const Transactions = () => {
             </DialogTrigger>
             <DialogContent className="p-0 max-w-4xl max-h-[90vh] w-[90vw]">
               <TransactionForm 
-                transaction={undefined}
+                transaction={editingTransaction}
                 inventoryItems={mappedInventory}
                 currentSpotPrice={financial.spotPrice}
                 onSave={handleComplete} 
-                onCancel={() => setOpen(false)}
+                onCancel={handleCancel}
               />
             </DialogContent>
           </Dialog>
         </div>
         <TransactionList 
           transactions={mappedTransactions}
-          onCreateTransaction={() => setOpen(true)}
+          onCreateTransaction={() => {
+            setEditingTransaction(undefined);
+            setOpen(true);
+          }}
           onViewTransaction={handleViewTransaction}
           onEditTransaction={handleEditTransaction}
           onPrintReceipt={handlePrintReceipt}
