@@ -1,4 +1,3 @@
-
 // Types for inventory items
 export interface InventoryItem {
   id: string;
@@ -36,6 +35,7 @@ export interface Transaction {
   goldAmount?: number;
   customer?: string;
   notes?: string;
+  customerPhone?: string; // Added customerPhone property
 }
 
 // Types for financial data
