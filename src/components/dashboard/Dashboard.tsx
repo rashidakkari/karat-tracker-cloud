@@ -9,6 +9,7 @@ import InventoryDistributionChart from "./InventoryDistributionChart";
 import RecentTransactions from "./RecentTransactions";
 import LowStockAlerts from "./LowStockAlerts";
 import SpotPriceUpdater from "./SpotPriceUpdater";
+import { InventoryItem as ModelInventoryItem } from "@/models/inventory";
 
 // Sample data for the spot price history chart
 const spotPriceHistory = [
@@ -83,7 +84,32 @@ const Dashboard: React.FC = () => {
     })
     .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
   
-  const lowStockItems = inventory.filter(item => item.quantity <= 2);
+  // Convert context InventoryItem type to model InventoryItem type
+  const mapToModelInventoryItem = (item: typeof inventory[0]): ModelInventoryItem => {
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description || '',
+      weight: item.weight,
+      // Convert weightUnit to match the model's expected types
+      weightUnit: (item.weightUnit === "kg" ? "g" : item.weightUnit) as "g" | "oz" | "tola" | "baht",
+      purity: item.purity,
+      costPrice: item.costPrice || 0,
+      category: item.category as any,
+      quantity: item.quantity,
+      equivalent24k: item.equivalent24k || 0,
+      dateAcquired: item.dateAdded || '',
+      // Add required fields with default values
+      isAvailable: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  };
+  
+  // Map inventory items to the model type required by LowStockAlerts
+  const lowStockItems = inventory
+    .filter(item => item.quantity <= 2)
+    .map(mapToModelInventoryItem);
   
   return (
     <div className="space-y-6">
