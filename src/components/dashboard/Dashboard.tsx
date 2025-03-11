@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useApp, Currency } from "@/contexts/AppContext";
 import { formatCurrency, formatWeight } from "@/utils/formatters";
@@ -8,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, PieChart, Pie, Cell } from "recharts";
+import { getPurityFactor } from "@/utils/goldCalculations";
 
 interface StatCardProps {
   title: string;
@@ -105,11 +107,43 @@ const Dashboard: React.FC = () => {
   const [newSpotPrice, setNewSpotPrice] = useState<string>(financial.spotPrice.toString());
   const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
   
+  // Corrected total24kWeight calculation to properly account for all items
   const total24kWeight = inventory.reduce((total, item) => {
-    const weightIn995 = item.purity === "999.9" 
-      ? (item.weight * 0.995) // Convert from 999.9 to 995
-      : (item.equivalent24k * 0.995); // Convert from 24K to 995
-    return total + weightIn995;
+    // Convert to 24K equivalent weight first (pure gold content)
+    let purityFactor = 0;
+    
+    switch (item.purity) {
+      case "999.9":
+        purityFactor = 0.9999;
+        break;
+      case "995":
+        purityFactor = 0.995;
+        break;
+      case "22K":
+        purityFactor = 0.916;
+        break;
+      case "21K":
+        purityFactor = 0.875;
+        break;
+      case "18K":
+        purityFactor = 0.75;
+        break;
+      case "14K":
+        purityFactor = 0.583;
+        break;
+      case "9K":
+        purityFactor = 0.375;
+        break;
+      default:
+        purityFactor = 0.995; // Default to 995 if unknown
+    }
+    
+    // Calculate pure gold content in the item
+    const pureGoldWeight = item.weight * purityFactor;
+    
+    // Convert to 995 standard (this step is optional)
+    // We can just sum the pure gold content directly
+    return total + pureGoldWeight;
   }, 0);
 
   const recentTransactions = transactions
