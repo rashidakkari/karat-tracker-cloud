@@ -34,11 +34,7 @@ const Dashboard: React.FC = () => {
   const [currency] = React.useState<Currency>("USD");
   
   const total24kWeight = inventory.reduce((total, item) => {
-    const weightInGrams = item.weightUnit === "kg" 
-      ? item.weight * 1000
-      : item.weightUnit === "oz" 
-        ? item.weight * 31.1035
-        : item.weight;
+    const weightInGrams = convertToGrams(item.weight, item.weightUnit);
     
     const purityFactor = getPurityFactor(item.purity);
     const pureGoldWeight = weightInGrams * purityFactor;
