@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useApp, Currency } from "@/contexts/AppContext";
 import { formatCurrency, formatWeight } from "@/utils/formatters";
@@ -20,7 +19,6 @@ interface StatCardProps {
   delay?: number;
 }
 
-// Demo data for charts
 const spotPriceHistory = [
   { date: "Jan", price: 1950 },
   { date: "Feb", price: 1980 },
@@ -107,12 +105,13 @@ const Dashboard: React.FC = () => {
   const [newSpotPrice, setNewSpotPrice] = useState<string>(financial.spotPrice.toString());
   const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
   
-  // Calculate total 24K weight
   const total24kWeight = inventory.reduce((total, item) => {
-    return total + item.equivalent24k;
+    const weightIn995 = item.purity === "999.9" 
+      ? (item.weight * 0.995) // Convert from 999.9 to 995
+      : (item.equivalent24k * 0.995); // Convert from 24K to 995
+    return total + weightIn995;
   }, 0);
-  
-  // Calculate recent transactions (last 7 days)
+
   const recentTransactions = transactions
     .filter(tx => {
       const txDate = new Date(tx.dateTime);
@@ -122,7 +121,6 @@ const Dashboard: React.FC = () => {
     })
     .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
   
-  // Calculate total sales and purchases in the last 7 days
   const salesValue = recentTransactions
     .filter(tx => tx.type === "sell")
     .reduce((total, tx) => total + tx.totalPrice, 0);
@@ -131,10 +129,8 @@ const Dashboard: React.FC = () => {
     .filter(tx => tx.type === "buy")
     .reduce((total, tx) => total + tx.totalPrice, 0);
   
-  // Find low stock items
   const lowStockItems = inventory.filter(item => item.quantity <= 2);
   
-  // Handle spot price update
   const handleUpdateSpotPrice = () => {
     const price = parseFloat(newSpotPrice);
     if (isNaN(price) || price <= 0) {
