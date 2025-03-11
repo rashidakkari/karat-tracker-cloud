@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useApp, Currency } from "@/contexts/AppContext";
 import { formatCurrency, formatWeight } from "@/utils/formatters";
@@ -10,8 +9,8 @@ import RecentTransactions from "./RecentTransactions";
 import LowStockAlerts from "./LowStockAlerts";
 import SpotPriceUpdater from "./SpotPriceUpdater";
 import { InventoryItem as ModelInventoryItem } from "@/models/inventory";
+import { getPurityFactor, convertToGrams } from "@/utils/goldCalculations";
 
-// Sample data for the spot price history chart
 const spotPriceHistory = [
   { date: "Jan", price: 1950 },
   { date: "Feb", price: 1980 },
@@ -22,58 +21,34 @@ const spotPriceHistory = [
   { date: "Jul", price: 2250 },
 ];
 
-// Sample data for the inventory distribution chart
 const inventoryData = [
   { name: "Bars", value: 60 },
   { name: "Jewelry", value: 30 },
   { name: "Coins", value: 10 },
 ];
 
-// Colors for the inventory distribution chart
 const COLORS = ["#D4AF37", "#AA8C2C", "#F6E5A1"];
 
 const Dashboard: React.FC = () => {
   const { inventory, transactions, financial, updateSpotPrice } = useApp();
   const [currency] = React.useState<Currency>("USD");
   
-  // Corrected total24kWeight calculation to properly account for all items
   const total24kWeight = inventory.reduce((total, item) => {
-    // Convert to 24K equivalent weight first (pure gold content)
-    let purityFactor = 0;
+    const weightInGrams = item.weightUnit === "kg" 
+      ? item.weight * 1000
+      : item.weightUnit === "oz" 
+        ? item.weight * 31.1035
+        : item.weight;
     
-    switch (item.purity) {
-      case "999.9":
-        purityFactor = 0.9999;
-        break;
-      case "995":
-        purityFactor = 0.995;
-        break;
-      case "22K":
-        purityFactor = 0.916;
-        break;
-      case "21K":
-        purityFactor = 0.875;
-        break;
-      case "18K":
-        purityFactor = 0.75;
-        break;
-      case "14K":
-        purityFactor = 0.583;
-        break;
-      case "9K":
-        purityFactor = 0.375;
-        break;
-      default:
-        purityFactor = 0.995; // Default to 995 if unknown
-    }
+    const purityFactor = getPurityFactor(item.purity);
+    const pureGoldWeight = weightInGrams * purityFactor;
     
-    // Calculate pure gold content in the item
-    const pureGoldWeight = item.weight * purityFactor;
+    console.log(`Item: ${item.name}, Weight: ${item.weight}${item.weightUnit}, In grams: ${weightInGrams}g, Purity: ${item.purity}, Factor: ${purityFactor}, Pure gold: ${pureGoldWeight}g`);
     
-    // Convert to 995 standard (this step is optional)
-    // We can just sum the pure gold content directly
     return total + pureGoldWeight;
   }, 0);
+  
+  console.log(`Total 24K equivalent weight: ${total24kWeight}g`);
 
   const recentTransactions = transactions
     .filter(tx => {
@@ -84,14 +59,12 @@ const Dashboard: React.FC = () => {
     })
     .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
   
-  // Convert context InventoryItem type to model InventoryItem type
   const mapToModelInventoryItem = (item: typeof inventory[0]): ModelInventoryItem => {
     return {
       id: item.id,
       name: item.name,
       description: item.description || '',
       weight: item.weight,
-      // Convert weightUnit to match the model's expected types
       weightUnit: (item.weightUnit === "kg" ? "g" : item.weightUnit) as "g" | "oz" | "tola" | "baht",
       purity: item.purity,
       costPrice: item.costPrice || 0,
@@ -99,14 +72,12 @@ const Dashboard: React.FC = () => {
       quantity: item.quantity,
       equivalent24k: item.equivalent24k || 0,
       dateAcquired: item.dateAdded || '',
-      // Add required fields with default values
       isAvailable: true,
       createdAt: new Date(),
       updatedAt: new Date()
     };
   };
   
-  // Map inventory items to the model type required by LowStockAlerts
   const lowStockItems = inventory
     .filter(item => item.quantity <= 2)
     .map(mapToModelInventoryItem);
