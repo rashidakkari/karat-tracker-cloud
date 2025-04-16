@@ -12,7 +12,7 @@ export interface InventoryItem {
   barcode?: string;
   description?: string;
   equivalent24k: number; // Weight in 24K equivalent
-  costPrice?: number; // Add costPrice field to address the type error
+  costPrice?: number;
 }
 
 // Types for transactions
@@ -35,7 +35,8 @@ export interface Transaction {
   goldAmount?: number;
   customer?: string;
   notes?: string;
-  customerPhone?: string; // Added customerPhone property
+  customerPhone?: string;
+  registerType?: "wholesale" | "retail";
 }
 
 // Types for financial data

@@ -27,7 +27,7 @@ interface AppContextType {
   removeInventoryItem: (id: string) => void;
   
   // Transaction actions
-  addTransaction: (transaction: Omit<Transaction, "id" | "dateTime">) => void;
+  addTransaction: (transaction: Omit<Transaction, "id" | "dateTime"> & { registerType?: string }) => void;
   updateTransaction: (id: string, updates: Partial<Transaction>) => void;
   removeTransaction: (id: string) => void;
   calculatePrice: (

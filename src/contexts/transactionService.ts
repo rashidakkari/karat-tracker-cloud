@@ -15,7 +15,7 @@ export const createTransactionService = (
     console.log("Adding transaction with data:", transaction);
     
     // Create a properly formatted transaction object
-    const newTransaction: Transaction = {
+    const newTransaction: Transaction & { registerType?: string } = {
       id: generateId(),
       dateTime: new Date().toISOString(),
       type: transaction.type?.toLowerCase() || 'buy',

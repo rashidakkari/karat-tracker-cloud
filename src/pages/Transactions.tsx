@@ -1,21 +1,22 @@
-
 import React, { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import TransactionList from "@/components/transactions/TransactionList";
 import { Button } from "@/components/ui/button";
 import TransactionForm from "@/components/transactions/TransactionForm";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { PlusIcon, Search } from "lucide-react";
+import { PlusIcon, Search, Filter } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Transaction as ModelTransaction, TransactionItem } from "@/models/transactions";
 import { InventoryItem as ModelInventoryItem, ItemCategory } from "@/models/inventory";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Transactions = () => {
   const [open, setOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<ModelTransaction | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState<string>("all");
   const [filteredTransactions, setFilteredTransactions] = useState<ModelTransaction[]>([]);
   const { transactions, inventory, financial, addTransaction, updateTransaction } = useApp();
   
@@ -37,10 +38,19 @@ const Transactions = () => {
       updatedAt: new Date(t.dateTime)
     })) as ModelTransaction[];
     
-    // Apply filtering if search query exists
+    // Apply type filtering if selected
+    let typeFiltered = mappedTransactions;
+    if (filterType !== 'all') {
+      typeFiltered = mappedTransactions.filter(t => 
+        t.type.toLowerCase() === filterType.toLowerCase() || 
+        t.registerType.toLowerCase() === filterType.toLowerCase()
+      );
+    }
+    
+    // Apply search filtering
     if (searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase();
-      const filtered = mappedTransactions.filter(t => 
+      const filtered = typeFiltered.filter(t => 
         t.customerName.toLowerCase().includes(query) ||
         t.id.toLowerCase().includes(query) ||
         t.type.toLowerCase().includes(query) ||
@@ -48,10 +58,10 @@ const Transactions = () => {
       );
       setFilteredTransactions(filtered);
     } else {
-      setFilteredTransactions(mappedTransactions);
+      setFilteredTransactions(typeFiltered);
     }
     
-  }, [transactions, searchQuery]);
+  }, [transactions, searchQuery, filterType]);
 
   // Function to view transaction details
   const handleViewTransaction = (transaction: ModelTransaction) => {
@@ -121,7 +131,24 @@ const Transactions = () => {
       mappedItem.costPrice = item.costPrice;
     }
     
-    return mappedItem;
+    return {
+      id: item.id,
+      name: item.name,
+      category: item.category as any,
+      weight: item.weight,
+      weightUnit: item.weightUnit === "kg" ? "g" : item.weightUnit as any, 
+      purity: item.purity,
+      quantity: item.quantity,
+      costPrice: 0,
+      sellingPrice: 0,
+      equivalent24k: item.equivalent24k || 0,
+      description: item.description || '',
+      dateAcquired: item.dateAdded || '',
+      isAvailable: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      type: item.type // Add the type property
+    };
   });
 
   return (
@@ -148,15 +175,38 @@ const Transactions = () => {
           </Dialog>
         </div>
 
-        {/* Search bar */}
-        <div className="mb-4 relative">
-          <Input
-            placeholder="Search transactions by customer name, ID, or type..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-          <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+        {/* Enhanced Search and Filter */}
+        <div className="mb-4 flex space-x-2">
+          <div className="relative flex-1">
+            <Input
+              placeholder="Search transactions by customer name, ID, or type..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+            <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+          </div>
+          
+          <div className="w-[200px]">
+            <Select
+              value={filterType}
+              onValueChange={setFilterType}
+            >
+              <SelectTrigger className="w-full">
+                <span className="flex items-center">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <span>{filterType === 'all' ? 'All Transactions' : filterType}</span>
+                </span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Transactions</SelectItem>
+                <SelectItem value="buy">Buy Transactions</SelectItem>
+                <SelectItem value="sell">Sell Transactions</SelectItem>
+                <SelectItem value="wholesale">Wholesale Register</SelectItem>
+                <SelectItem value="retail">Retail Register</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <TransactionList 

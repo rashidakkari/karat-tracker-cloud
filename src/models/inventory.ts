@@ -1,8 +1,7 @@
-
 export type ItemType = 'jewelry' | 'coin' | 'bar' | 'scrap' | 'other';
 export type KaratValue = 10 | 14 | 18 | 22 | 24;
 export type ItemCategory = 'Bars' | 'Coins' | 'Jewelry' | 'bars' | 'coins' | 'jewelry';
-export type RegisterType = 'Wholesale' | 'Retail';
+export type RegisterType = 'Wholesale' | 'Retail' | 'wholesale' | 'retail';
 export type GoldPurity = '999.9' | '995' | '22K' | '21K' | '18K' | '14K' | '9K';
 
 export interface InventoryItem {
@@ -13,7 +12,7 @@ export interface InventoryItem {
   weight: number;
   weightUnit: 'g' | 'oz' | 'tola' | 'baht';
   karat?: KaratValue;
-  purity: GoldPurity; // Updated to match GoldPurity type
+  purity: GoldPurity;
   costPrice: number;
   sellingPrice?: number;
   supplier?: string;
@@ -32,6 +31,7 @@ export interface InventoryItem {
   updatedAt?: Date;
   createdAt?: Date;
   equivalent24k?: number;
+  type?: RegisterType; // Added type property
 }
 
 export interface InventoryRegister {

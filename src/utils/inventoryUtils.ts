@@ -103,9 +103,10 @@ export const updateRegisterBalance = (
 };
 
 /**
- * Update customer debt based on transaction
+ * Create customer debt object based on transaction
  * @param customerName - Name of the customer
- * @param amount - Amount to add to debt
+ * @param customerPhone - Phone number of the customer
+ * @param amount - Amount of debt
  * @param currency - Currency of the debt
  * @param description - Description of the debt
  * @param date - Date of the transaction
@@ -130,4 +131,52 @@ export const createCustomerDebt = (
     status: 'pending',
     partialPayments: []
   };
+};
+
+/**
+ * Get inventory items by register type
+ * @param items - Array of inventory items
+ * @param registerType - Type of register (wholesale or retail)
+ * @returns Array of items in the specified register
+ */
+export const getInventoryByRegister = (
+  items: InventoryItem[], 
+  registerType: "wholesale" | "retail"
+): InventoryItem[] => {
+  return items.filter(item => item.type?.toLowerCase() === registerType.toLowerCase());
+};
+
+/**
+ * Get cash balance for a specific register
+ * @param financialData - Financial data object
+ * @param registerType - Type of register (wholesale or retail)
+ * @returns Object with cash balances for the register
+ */
+export const getRegisterBalance = (
+  financialData: any,
+  registerType: "wholesale" | "retail"
+): { [key: string]: number } => {
+  const registerKey = registerType === "wholesale" ? "wholesaleBalance" : "retailBalance";
+  return financialData[registerKey] || { USD: 0, EUR: 0, GBP: 0, CHF: 0 };
+};
+
+/**
+ * Calculate total value of debts by type
+ * @param debts - Array of debt objects
+ * @param currency - Currency to calculate total in (defaults to USD)
+ * @returns Total debt value in specified currency
+ */
+export const calculateTotalDebt = (
+  debts: any[],
+  currency: string = "USD"
+): number => {
+  return debts
+    .filter(debt => debt.currency === currency && debt.status !== "paid")
+    .reduce((total, debt) => {
+      // Subtract any partial payments
+      const partialPaymentsTotal = (debt.partialPayments || [])
+        .reduce((sum: number, payment: any) => sum + payment.amount, 0);
+      
+      return total + (debt.amount - partialPaymentsTotal);
+    }, 0);
 };

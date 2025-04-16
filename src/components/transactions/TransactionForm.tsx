@@ -89,7 +89,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   useEffect(() => {
     const registerType = formData.registerType?.toLowerCase() || 'wholesale';
     const filtered = inventoryItems.filter(item => 
-      item.type?.toLowerCase() === registerType
+      (item as any).type?.toLowerCase() === registerType
     );
     setFilteredItems(filtered);
   }, [formData.registerType, inventoryItems]);
