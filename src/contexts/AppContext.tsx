@@ -7,11 +7,19 @@ import { createFinancialService } from './financialService';
 import { toast } from "sonner";
 import { calculateTransactionPrice } from "@/utils/goldCalculations";
 
+// Extended financial data type
+interface ExtendedFinancialData extends FinancialData {
+  wholesaleBalance?: { [key in Currency]: number };
+  retailBalance?: { [key in Currency]: number };
+  customerDebts?: any[];
+  borrowedDebts?: any[];
+}
+
 // Main app context type
 interface AppContextType {
   inventory: InventoryItem[];
   transactions: Transaction[];
-  financial: FinancialData;
+  financial: ExtendedFinancialData;
   
   // Inventory actions
   addInventoryItem: (item: Omit<InventoryItem, "id" | "dateAdded" | "equivalent24k">) => void;
@@ -39,6 +47,8 @@ interface AppContextType {
   updateCashBalance: (currency: Currency, amount: number) => void;
   updateCustomerDebt: (amount: number) => void;
   updateFactoryDebt: (amount: number) => void;
+  updateFinancial: (updates: Partial<ExtendedFinancialData>) => void;
+  addDebt: (debt: any) => void;
   
   // Utility
   isLoading: boolean;
@@ -52,8 +62,40 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [financial, setFinancial] = useState<FinancialData>(DEFAULT_FINANCIAL);
+  const [financial, setFinancial] = useState<ExtendedFinancialData>({
+    ...DEFAULT_FINANCIAL,
+    wholesaleBalance: { USD: 0, EUR: 0, GBP: 0, CHF: 0 },
+    retailBalance: { USD: 0, EUR: 0, GBP: 0, CHF: 0 },
+    customerDebts: [],
+    borrowedDebts: []
+  });
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Update financial data
+  const updateFinancial = (updates: Partial<ExtendedFinancialData>) => {
+    setFinancial(prev => ({ ...prev, ...updates }));
+  };
+  
+  // Add debt record
+  const addDebt = (debt: any) => {
+    if (!debt.id) {
+      debt.id = generateId();
+    }
+    
+    if (debt.type === 'customer') {
+      setFinancial(prev => ({
+        ...prev,
+        customerDebts: [...(prev.customerDebts || []), debt],
+        customerDebt: (prev.customerDebt || 0) + debt.amount
+      }));
+    } else {
+      setFinancial(prev => ({
+        ...prev,
+        borrowedDebts: [...(prev.borrowedDebts || []), debt],
+        factoryDebt: (prev.factoryDebt || 0) + debt.amount
+      }));
+    }
+  };
   
   // Create services
   const inventoryService = createInventoryService(setInventory);
@@ -61,7 +103,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const transactionService = createTransactionService(
     setTransactions,
     inventory,
-    inventoryService.updateInventoryItem
+    inventoryService.updateInventoryItem,
+    updateFinancial,
+    financial,
+    addDebt
   );
   
   const financialService = createFinancialService(setFinancial);
@@ -85,7 +130,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Load financial data
         const storedFinancial = localStorage.getItem(STORAGE_KEYS.financial);
         if (storedFinancial) {
-          setFinancial(JSON.parse(storedFinancial));
+          const parsedFinancial = JSON.parse(storedFinancial);
+          setFinancial({
+            ...parsedFinancial,
+            // Ensure we have the new fields
+            wholesaleBalance: parsedFinancial.wholesaleBalance || { USD: 0, EUR: 0, GBP: 0, CHF: 0 },
+            retailBalance: parsedFinancial.retailBalance || { USD: 0, EUR: 0, GBP: 0, CHF: 0 },
+            customerDebts: parsedFinancial.customerDebts || [],
+            borrowedDebts: parsedFinancial.borrowedDebts || []
+          });
         }
       } catch (error) {
         console.error("Error loading data from localStorage:", error);
@@ -151,6 +204,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...transactionService,
         calculatePrice,
         ...financialService,
+        updateFinancial,
+        addDebt,
         isLoading,
         calculateEquivalent24k
       }}
@@ -159,6 +214,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     </AppContext.Provider>
   );
 };
+
+// Helper function to generate ID
+function generateId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2);
+}
 
 // Hook to use the app context
 export const useApp = () => {

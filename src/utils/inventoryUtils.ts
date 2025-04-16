@@ -72,3 +72,62 @@ export const verifyInventoryAvailability = (
     weightAvailable: item.weight >= (weight - TOLERANCE)
   };
 };
+
+/**
+ * Update register cash balance based on transaction
+ * @param registerType - Type of register (wholesale or retail)
+ * @param amount - Amount to add or subtract
+ * @param currency - Currency of the transaction
+ * @param isAddition - Whether to add or subtract the amount
+ * @param financialData - Current financial data
+ * @returns Updated cash balance for the register
+ */
+export const updateRegisterBalance = (
+  registerType: "wholesale" | "retail",
+  amount: number,
+  currency: string,
+  isAddition: boolean,
+  financialData: any
+): { [key: string]: number } => {
+  // Get the current register balance
+  const registerKey = registerType === "wholesale" ? "wholesaleBalance" : "retailBalance";
+  const currentBalance = financialData[registerKey]?.[currency] || 0;
+  
+  // Calculate the new balance
+  const newBalance = isAddition ? currentBalance + amount : currentBalance - amount;
+  
+  return {
+    ...financialData[registerKey],
+    [currency]: Math.max(0, newBalance)
+  };
+};
+
+/**
+ * Update customer debt based on transaction
+ * @param customerName - Name of the customer
+ * @param amount - Amount to add to debt
+ * @param currency - Currency of the debt
+ * @param description - Description of the debt
+ * @param date - Date of the transaction
+ * @returns Customer debt object
+ */
+export const createCustomerDebt = (
+  customerName: string,
+  customerPhone: string | undefined,
+  amount: number,
+  currency: string,
+  description: string,
+  date: string
+): any => {
+  return {
+    personName: customerName,
+    contactInfo: customerPhone || '',
+    amount: amount,
+    currency: currency,
+    date: date,
+    dueDate: '', // Can be set later
+    description: description,
+    status: 'pending',
+    partialPayments: []
+  };
+};

@@ -1,13 +1,15 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Transaction, TransactionItem, Payment, TransactionType } from '@/models/transactions';
+import { Transaction, TransactionItem, Payment } from '@/models/transactions';
 import { InventoryItem } from '@/models/inventory';
-import { CurrencyCode, GoldPurity, WeightUnit } from '@/utils/goldCalculations';
 import { 
   calculateBarBuyingPrice, 
   calculateBarSellingPrice,
   calculateJewelryBuyingPrice,
-  calculateJewelrySellingPrice
+  calculateJewelrySellingPrice,
+  GoldPurity,
+  WeightUnit,
+  CurrencyCode
 } from '@/utils/goldCalculations';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,9 +19,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
-import { PlusCircle, MinusCircle, Trash, Save, Search, QrCode } from 'lucide-react';
+import { 
+  PlusCircle, 
+  MinusCircle, 
+  Trash, 
+  Save, 
+  Search, 
+  QrCode, 
+  CreditCard, 
+  Wallet, 
+  DollarSign, 
+  Calculator 
+} from 'lucide-react';
 
 interface TransactionFormProps {
   transaction?: Transaction;
@@ -65,16 +79,25 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   const [searchText, setSearchText] = useState<string>('');
   const [manualWeight, setManualWeight] = useState<number | undefined>(undefined);
   const [customUnitPrice, setCustomUnitPrice] = useState<number | undefined>(undefined);
+  const [createDebt, setCreateDebt] = useState<boolean>(false);
+  const [filteredItems, setFilteredItems] = useState<InventoryItem[]>([]);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   
   const isEditing = !!transaction;
 
+  // Filter inventory items based on the register type
+  useEffect(() => {
+    const registerType = formData.registerType?.toLowerCase() || 'wholesale';
+    const filtered = inventoryItems.filter(item => 
+      item.type?.toLowerCase() === registerType
+    );
+    setFilteredItems(filtered);
+  }, [formData.registerType, inventoryItems]);
+
+  // Calculate totals when items or payments change
   useEffect(() => {
     const totalAmount = selectedItems.reduce((sum, item) => sum + item.totalPrice, 0);
     const paidAmount = payments.reduce((sum, payment) => {
-      if (payment.method === 'Gold') {
-        return sum + (payment.amount || 0);
-      }
       return sum + (payment.amount || 0);
     }, 0);
     
@@ -87,13 +110,14 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     }));
   }, [selectedItems, payments]);
 
+  // Handle barcode search
   const handleSearchByIdOrBarcode = () => {
     if (!searchText.trim()) {
       toast.error('Please enter an item ID or scan a barcode');
       return;
     }
 
-    const foundItem = inventoryItems.find(
+    const foundItem = filteredItems.find(
       item => item.id === searchText.trim() || item.barcode === searchText.trim()
     );
 
@@ -105,12 +129,33 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     }
   };
 
+  // Handle barcode scanner enter key
   const handleBarcodeScanned = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearchByIdOrBarcode();
     }
   };
 
+  // Handle search input change with filtering
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const searchValue = e.target.value;
+    setSearchText(searchValue);
+    
+    if (searchValue.trim().length >= 2) {
+      const lowercaseSearch = searchValue.toLowerCase();
+      const matches = filteredItems.filter(item => 
+        item.name.toLowerCase().includes(lowercaseSearch) ||
+        item.id.toLowerCase().includes(lowercaseSearch) ||
+        (item.barcode && item.barcode.toLowerCase().includes(lowercaseSearch))
+      );
+      
+      if (matches.length === 1) {
+        setSelectedItemId(matches[0].id);
+      }
+    }
+  };
+
+  // Add item to transaction
   const addItem = () => {
     if (!selectedItemId) {
       toast.error('Please select an item');
@@ -122,7 +167,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       return;
     }
     
-    const inventoryItem = inventoryItems.find(item => item.id === selectedItemId);
+    const inventoryItem = filteredItems.find(item => item.id === selectedItemId);
     if (!inventoryItem) {
       toast.error('Selected item not found in inventory');
       return;
@@ -137,7 +182,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     }
     
     let unitPrice = 0;
-    const isBars = inventoryItem.category === 'Bars' || inventoryItem.category === 'Coins';
+    const isBars = inventoryItem.category.toLowerCase() === 'bars' || inventoryItem.category.toLowerCase() === 'coins';
     const purity = inventoryItem.purity as GoldPurity;
     
     if (customUnitPrice !== undefined && customUnitPrice > 0) {
@@ -175,6 +220,14 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       currency: formData.currency as string
     };
     
+    // Check if the item can be added based on inventory availability
+    if (formData.type === 'Sell') {
+      if (inventoryItem.quantity < quantity) {
+        toast.error(`Not enough quantity available. Only ${inventoryItem.quantity} in stock.`);
+        return;
+      }
+    }
+    
     setSelectedItems([...selectedItems, newItem]);
     setSelectedItemId('');
     setQuantity(1);
@@ -183,10 +236,12 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     setSearchText('');
   };
 
+  // Remove item from transaction
   const removeItem = (id: string) => {
     setSelectedItems(selectedItems.filter(item => item.id !== id));
   };
 
+  // Add payment method
   const addPayment = () => {
     const newPayment: Payment = {
       method: 'Cash',
@@ -197,6 +252,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     setPayments([...payments, newPayment]);
   };
 
+  // Update payment details
   const updatePayment = (index: number, field: keyof Payment, value: any) => {
     const updatedPayments = [...payments];
     updatedPayments[index] = {
@@ -207,10 +263,12 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     setPayments(updatedPayments);
   };
 
+  // Remove payment
   const removePayment = (index: number) => {
     setPayments(payments.filter((_, i) => i !== index));
   };
 
+  // Update form data for a specific field
   const handleChange = (field: keyof Transaction, value: any) => {
     setFormData({
       ...formData,
@@ -219,6 +277,38 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     });
   };
 
+  // Add full payment amount
+  const handleAddFullPayment = () => {
+    const totalAmount = formData.totalAmount || 0;
+    
+    if (totalAmount <= 0) {
+      toast.error('No items added yet. Add items first to calculate total.');
+      return;
+    }
+    
+    // Check if we already have a payment
+    if (payments.length > 0) {
+      // Update first payment to full amount
+      const updatedPayments = [...payments];
+      updatedPayments[0] = {
+        ...updatedPayments[0],
+        method: 'Cash',
+        amount: totalAmount,
+        currency: formData.currency as CurrencyCode
+      };
+      setPayments(updatedPayments);
+    } else {
+      // Create new payment with full amount
+      const newPayment: Payment = {
+        method: 'Cash',
+        amount: totalAmount,
+        currency: formData.currency as CurrencyCode
+      };
+      setPayments([newPayment]);
+    }
+  };
+
+  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -232,95 +322,142 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       return;
     }
     
+    // Determine if there's an unpaid amount that should create a debt
+    const totalAmount = formData.totalAmount || 0;
+    const paidAmount = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    const hasUnpaidAmount = paidAmount < totalAmount;
+    
+    // If there's an unpaid amount and createDebt is not checked, show warning
+    if (hasUnpaidAmount && !createDebt) {
+      toast.warning('Transaction has unpaid amount. Please check "Create Debt" to continue or add full payment.');
+      return;
+    }
+    
     const finalTransaction: Transaction = {
       ...formData as Transaction,
       items: selectedItems,
       payments: payments,
-      status: payments.length > 0 && formData.balance === 0 ? 'Completed' : 'Pending'
+      status: payments.length > 0 && !hasUnpaidAmount ? 'Completed' : 'Pending'
     };
     
     onSave(finalTransaction);
   };
 
+  // Focus barcode input field
   const focusBarcodeInput = () => {
     if (barcodeInputRef.current) {
       barcodeInputRef.current.focus();
     }
   };
 
+  // Auto-calculate price when relevant fields change
+  const handleCalculatePrice = () => {
+    if (!selectedItemId) {
+      toast.error('Please select an item first');
+      return;
+    }
+    
+    const item = filteredItems.find(i => i.id === selectedItemId);
+    if (!item) return;
+    
+    const itemWeight = manualWeight !== undefined ? manualWeight : item.weight;
+    const isBars = item.category.toLowerCase() === 'bars' || item.category.toLowerCase() === 'coins';
+    const purity = item.purity as GoldPurity;
+    
+    let calculatedPrice = 0;
+    if (formData.type === 'Buy') {
+      calculatedPrice = isBars 
+        ? calculateBarBuyingPrice(currentSpotPrice, itemWeight, purity as '999.9' | '995') 
+        : calculateJewelryBuyingPrice(currentSpotPrice, itemWeight, purity);
+    } else {
+      calculatedPrice = isBars
+        ? calculateBarSellingPrice(currentSpotPrice, itemWeight, purity as '999.9' | '995', formData.commission || 0)
+        : calculateJewelrySellingPrice(currentSpotPrice, itemWeight, purity, formData.commission || 0);
+    }
+    
+    setCustomUnitPrice(calculatedPrice);
+    toast.success(`Calculated price: ${calculatedPrice.toFixed(2)} ${formData.currency}`);
+  };
+
   return (
     <Card className="shadow-lg max-h-[80vh] overflow-hidden flex flex-col">
-      <CardHeader className="bg-secondary rounded-t-lg sticky top-0 z-10 p-4">
-        <CardTitle className="text-xl">
-          {isEditing ? 'Edit Transaction' : 'New Transaction'}
+      <CardHeader className="bg-secondary/80 sticky top-0 z-10 p-4">
+        <CardTitle className="text-xl flex items-center justify-between">
+          <span>{isEditing ? 'Edit Transaction' : 'New Transaction'}</span>
+          <div className="text-sm font-normal flex items-center">
+            <span className="mr-2">Spot Price:</span>
+            <span className="font-bold">${currentSpotPrice}</span>
+          </div>
         </CardTitle>
       </CardHeader>
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
         <CardContent className="space-y-4 p-4 overflow-y-auto flex-1">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="type">Transaction Type*</Label>
-              <Select
-                value={formData.type}
-                onValueChange={(value) => handleChange('type', value as TransactionType)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Buy">Buy (from customer)</SelectItem>
-                  <SelectItem value="Sell">Sell (to customer)</SelectItem>
-                  <SelectItem value="Exchange">Exchange</SelectItem>
-                  <SelectItem value="Repair">Repair</SelectItem>
-                  <SelectItem value="Expense">Expense</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Transaction Type and Register Type */}
+            <div className="flex space-x-2">
+              <div className="space-y-2 flex-1">
+                <Label htmlFor="type">Transaction Type*</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value: any) => handleChange('type', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Buy">Buy (from customer)</SelectItem>
+                    <SelectItem value="Sell">Sell (to customer)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2 flex-1">
+                <Label htmlFor="registerType">Register*</Label>
+                <Select
+                  value={formData.registerType}
+                  onValueChange={(value: any) => handleChange('registerType', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select register" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Wholesale">Wholesale</SelectItem>
+                    <SelectItem value="Retail">Retail</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="registerType">Register*</Label>
-              <Select
-                value={formData.registerType}
-                onValueChange={(value) => handleChange('registerType', value as 'Wholesale' | 'Retail')}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select register" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Wholesale">Wholesale (Bars)</SelectItem>
-                  <SelectItem value="Retail">Retail (Jewelry)</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Customer Information */}
+            <div className="flex space-x-2">
+              <div className="space-y-2 flex-1">
+                <Label htmlFor="customerName">Customer Name*</Label>
+                <Input
+                  id="customerName"
+                  value={formData.customerName || ''}
+                  onChange={(e) => handleChange('customerName', e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2 flex-1">
+                <Label htmlFor="customerPhone">Customer Phone</Label>
+                <Input
+                  id="customerPhone"
+                  value={formData.customerPhone || ''}
+                  onChange={(e) => handleChange('customerPhone', e.target.value)}
+                />
+              </div>
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="customerName">Customer Name*</Label>
-              <Input
-                id="customerName"
-                value={formData.customerName || ''}
-                onChange={(e) => handleChange('customerName', e.target.value)}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="customerPhone">Customer Phone</Label>
-              <Input
-                id="customerPhone"
-                value={formData.customerPhone || ''}
-                onChange={(e) => handleChange('customerPhone', e.target.value)}
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-4">
+          {/* Currency, Spot Price, and Commission Section */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="currency">Currency*</Label>
               <Select
                 value={formData.currency}
-                onValueChange={(value) => handleChange('currency', value as CurrencyCode)}
+                onValueChange={(value: any) => handleChange('currency', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select currency" />
@@ -360,7 +497,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                 />
                 <Select
                   value={formData.commissionType}
-                  onValueChange={(value) => handleChange('commissionType', value as 'Percentage' | 'Fixed' | 'PerGram')}
+                  onValueChange={(value: any) => handleChange('commissionType', value)}
                 >
                   <SelectTrigger className="w-[120px]">
                     <SelectValue placeholder="Type" />
@@ -375,29 +512,39 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
             </div>
           </div>
           
+          {/* Transaction Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-2">
               <TabsTrigger value="items">Items</TabsTrigger>
               <TabsTrigger value="payments">Payments</TabsTrigger>
             </TabsList>
             
+            {/* Items Tab */}
             <TabsContent value="items" className="space-y-4 pt-4">
-              {/* Item search by ID or barcode */}
-              <div className="flex items-end space-x-2 p-3 border rounded-md bg-secondary/10">
+              {/* Item Search */}
+              <div className="flex space-x-2 p-3 border rounded-md bg-secondary/10">
                 <div className="flex-1 space-y-2">
-                  <Label htmlFor="itemSearch">Search by Item ID or Barcode</Label>
+                  <Label htmlFor="itemSearch">Search Items</Label>
                   <div className="flex space-x-2">
-                    <Input
-                      id="itemSearch"
-                      ref={barcodeInputRef}
-                      value={searchText}
-                      onChange={(e) => setSearchText(e.target.value)}
-                      onKeyDown={handleBarcodeScanned}
-                      placeholder="Enter item ID or scan barcode"
-                    />
-                    <Button type="button" onClick={handleSearchByIdOrBarcode} variant="outline">
-                      <Search className="h-4 w-4 mr-1" /> Search
-                    </Button>
+                    <div className="relative flex-1">
+                      <Input
+                        id="itemSearch"
+                        ref={barcodeInputRef}
+                        value={searchText}
+                        onChange={handleSearchChange}
+                        onKeyDown={handleBarcodeScanned}
+                        placeholder="Search by name, ID, or scan barcode"
+                      />
+                      <Button 
+                        type="button" 
+                        size="icon" 
+                        variant="ghost" 
+                        className="absolute right-2 top-1/2 -translate-y-1/2"
+                        onClick={handleSearchByIdOrBarcode}
+                      >
+                        <Search className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <Button type="button" onClick={focusBarcodeInput} variant="outline">
                       <QrCode className="h-4 w-4 mr-1" /> Scan
                     </Button>
@@ -405,8 +552,9 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-end space-x-2">
-                <div className="flex-1 space-y-2">
+              {/* Item Selection */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label htmlFor="selectedItem">Select Item</Label>
                   <Select
                     value={selectedItemId}
@@ -416,33 +564,35 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                       <SelectValue placeholder="Select an item" />
                     </SelectTrigger>
                     <SelectContent>
-                      {inventoryItems.map(item => (
+                      {filteredItems.map(item => (
                         <SelectItem key={item.id} value={item.id}>
-                          {item.name} - {item.purity} - {item.weight}{item.weightUnit}
+                          {item.name} - {item.purity} - {item.weight}{item.weightUnit} ({item.quantity} available)
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 
-                <div className="space-y-2 w-[100px]">
-                  <Label htmlFor="quantity">Quantity</Label>
-                  <Input
-                    id="quantity"
-                    type="number"
-                    min="1"
-                    value={quantity}
-                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                  />
-                </div>
+                <div className="flex space-x-2 items-end">
+                  <div className="space-y-2 flex-1">
+                    <Label htmlFor="quantity">Quantity</Label>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      min="1"
+                      value={quantity}
+                      onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                    />
+                  </div>
 
-                <Button type="button" onClick={addItem} className="mb-0.5">
-                  <PlusCircle className="h-4 w-4 mr-1" /> Add
-                </Button>
+                  <Button type="button" onClick={addItem} className="mb-0.5">
+                    <PlusCircle className="h-4 w-4 mr-1" /> Add
+                  </Button>
+                </div>
               </div>
               
-              {/* Manual weight and custom price inputs */}
-              <div className="grid grid-cols-2 gap-4 p-3 border rounded-md bg-secondary/10">
+              {/* Custom Weight and Price Section */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-3 border rounded-md bg-secondary/10">
                 <div className="space-y-2">
                   <Label htmlFor="manualWeight">
                     Custom Weight (g) <span className="text-xs text-muted-foreground">(Optional)</span>
@@ -457,7 +607,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                       const value = e.target.value !== '' ? parseFloat(e.target.value) : undefined;
                       setManualWeight(value);
                     }}
-                    placeholder="Override item weight if needed"
+                    placeholder="Override weight"
                   />
                 </div>
                 
@@ -475,19 +625,31 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                       const value = e.target.value !== '' ? parseFloat(e.target.value) : undefined;
                       setCustomUnitPrice(value);
                     }}
-                    placeholder="Override calculated price if needed"
+                    placeholder="Override price"
                   />
+                </div>
+                
+                <div className="flex items-end">
+                  <Button 
+                    type="button" 
+                    onClick={handleCalculatePrice}
+                    className="flex-1 mb-0.5"
+                    variant="outline"
+                  >
+                    <Calculator className="h-4 w-4 mr-1" /> Calculate Price
+                  </Button>
                 </div>
               </div>
               
-              <div className="border rounded-md">
+              {/* Item Table */}
+              <div className="border rounded-md overflow-hidden">
                 <Table>
                   <TableHeader className="bg-secondary/50">
                     <TableRow>
                       <TableHead>Item</TableHead>
                       <TableHead>Purity</TableHead>
                       <TableHead>Weight</TableHead>
-                      <TableHead>Quantity</TableHead>
+                      <TableHead>Qty</TableHead>
                       <TableHead className="text-right">Unit Price</TableHead>
                       <TableHead className="text-right">Total</TableHead>
                       <TableHead className="w-[50px]"></TableHead>
@@ -497,7 +659,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                     {selectedItems.length > 0 ? (
                       selectedItems.map((item) => (
                         <TableRow key={item.id}>
-                          <TableCell>{item.name}</TableCell>
+                          <TableCell className="font-medium">{item.name}</TableCell>
                           <TableCell>{item.purity}</TableCell>
                           <TableCell>
                             {item.weight} {item.weightUnit}
@@ -533,19 +695,26 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
               </div>
             </TabsContent>
             
+            {/* Payments Tab */}
             <TabsContent value="payments" className="space-y-4 pt-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Payment Methods</h3>
-                <Button type="button" onClick={addPayment} variant="outline" size="sm">
-                  <PlusCircle className="h-4 w-4 mr-1" /> Add Payment
-                </Button>
+                <div className="flex space-x-2">
+                  <Button type="button" onClick={handleAddFullPayment} variant="outline" size="sm">
+                    <DollarSign className="h-4 w-4 mr-1" /> Full Payment
+                  </Button>
+                  <Button type="button" onClick={addPayment} variant="outline" size="sm">
+                    <PlusCircle className="h-4 w-4 mr-1" /> Add Method
+                  </Button>
+                </div>
               </div>
               
               <div className="space-y-4">
                 {payments.length > 0 ? (
                   payments.map((payment, index) => (
                     <div key={index} className="flex items-end gap-2 p-3 border rounded-md bg-secondary/10">
-                      <div className="space-y-2 flex-[2]">
+                      {/* Payment Method */}
+                      <div className="space-y-2 flex-1">
                         <Label htmlFor={`payment-method-${index}`}>Method</Label>
                         <Select
                           value={payment.method}
@@ -555,17 +724,30 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                             <SelectValue placeholder="Select method" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Cash">Cash</SelectItem>
-                            <SelectItem value="Gold">Gold</SelectItem>
+                            <SelectItem value="Cash">
+                              <span className="flex items-center">
+                                <DollarSign className="h-4 w-4 mr-1" /> Cash
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="Gold">
+                              <span className="flex items-center">
+                                <Wallet className="h-4 w-4 mr-1" /> Gold
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="Credit Card">
+                              <span className="flex items-center">
+                                <CreditCard className="h-4 w-4 mr-1" /> Credit Card
+                              </span>
+                            </SelectItem>
                             <SelectItem value="Mixed">Mixed</SelectItem>
-                            <SelectItem value="Credit">Credit</SelectItem>
                             <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
                             <SelectItem value="Other">Other</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       
-                      <div className="space-y-2 flex-[1]">
+                      {/* Payment Amount */}
+                      <div className="space-y-2 flex-1">
                         <Label htmlFor={`payment-amount-${index}`}>Amount</Label>
                         <Input
                           id={`payment-amount-${index}`}
@@ -577,7 +759,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                         />
                       </div>
                       
-                      <div className="space-y-2 flex-[1]">
+                      {/* Payment Currency */}
+                      <div className="space-y-2 flex-1">
                         <Label htmlFor={`payment-currency-${index}`}>Currency</Label>
                         <Select
                           value={payment.currency}
@@ -595,9 +778,10 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                         </Select>
                       </div>
                       
+                      {/* Gold-specific fields */}
                       {payment.method === 'Gold' && (
                         <>
-                          <div className="space-y-2 flex-[1]">
+                          <div className="space-y-2 flex-1">
                             <Label htmlFor={`payment-gold-weight-${index}`}>Weight</Label>
                             <Input
                               id={`payment-gold-weight-${index}`}
@@ -609,7 +793,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                             />
                           </div>
                           
-                          <div className="space-y-2 flex-[1]">
+                          <div className="space-y-2 flex-1">
                             <Label htmlFor={`payment-gold-purity-${index}`}>Purity</Label>
                             <Select
                               value={payment.goldPurity}
@@ -632,6 +816,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                         </>
                       )}
                       
+                      {/* Remove Payment Button */}
                       <Button
                         type="button"
                         variant="ghost"
@@ -650,8 +835,26 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                 )}
               </div>
               
+              {/* Create Debt Option */}
+              {formData.totalAmount && formData.totalAmount > 0 && (
+                <div className="flex items-center space-x-2 mt-4">
+                  <Checkbox 
+                    id="createDebt" 
+                    checked={createDebt} 
+                    onCheckedChange={(checked) => setCreateDebt(checked === true)} 
+                  />
+                  <Label htmlFor="createDebt" className="cursor-pointer">
+                    {formData.type === 'Buy' ? 
+                      "Create debt record (we owe the supplier)" : 
+                      "Create debt record (customer owes us)"
+                    }
+                  </Label>
+                </div>
+              )}
+              
+              {/* Transaction Summary */}
               <div className="mt-4 p-4 border rounded-md bg-secondary/20">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Total Amount</p>
                     <p className="text-xl font-semibold">
@@ -659,8 +862,14 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                     </p>
                   </div>
                   <div>
+                    <p className="text-sm text-muted-foreground">Paid Amount</p>
+                    <p className="text-xl font-semibold">
+                      {payments.reduce((sum, p) => sum + (p.amount || 0), 0).toFixed(2)} {formData.currency}
+                    </p>
+                  </div>
+                  <div>
                     <p className="text-sm text-muted-foreground">Remaining Balance</p>
-                    <p className={`text-xl font-semibold ${formData.balance === 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    <p className={`text-xl font-semibold ${formData.balance === 0 ? 'text-green-500' : 'text-amber-500'}`}>
                       {formData.balance?.toFixed(2) || '0.00'} {formData.currency}
                     </p>
                   </div>
@@ -669,6 +878,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
             </TabsContent>
           </Tabs>
           
+          {/* Notes Section */}
           <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>
             <Textarea
@@ -680,7 +890,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
           </div>
         </CardContent>
         
-        <CardFooter className="flex justify-between bg-muted/30 border-t p-4 sticky bottom-0 z-10">
+        {/* Form Footer */}
+        <CardFooter className="flex justify-between bg-secondary/30 border-t p-4 sticky bottom-0 z-10">
           <Button variant="outline" onClick={onCancel} type="button">
             Cancel
           </Button>

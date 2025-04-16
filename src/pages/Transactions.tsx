@@ -1,21 +1,58 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import TransactionList from "@/components/transactions/TransactionList";
 import { Button } from "@/components/ui/button";
 import TransactionForm from "@/components/transactions/TransactionForm";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { PlusIcon } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { PlusIcon, Search } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Transaction as ModelTransaction, TransactionItem } from "@/models/transactions";
 import { InventoryItem as ModelInventoryItem, ItemCategory } from "@/models/inventory";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 
 const Transactions = () => {
   const [open, setOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<ModelTransaction | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredTransactions, setFilteredTransactions] = useState<ModelTransaction[]>([]);
   const { transactions, inventory, financial, addTransaction, updateTransaction } = useApp();
   
+  // Map the AppContext transactions to match the model Transaction type and filter them
+  useEffect(() => {
+    const mappedTransactions = transactions.map((t: any) => ({
+      id: t.id,
+      type: t.type,
+      customerName: t.customer || "Unknown",
+      customerPhone: t.customerPhone || "",
+      date: t.dateTime,
+      items: [],
+      totalAmount: t.totalPrice || 0,
+      paymentMethod: t.paymentMethod,
+      status: "completed",
+      currency: t.currency,
+      registerType: t.registerType || "Wholesale",
+      createdAt: new Date(t.dateTime),
+      updatedAt: new Date(t.dateTime)
+    })) as ModelTransaction[];
+    
+    // Apply filtering if search query exists
+    if (searchQuery.trim() !== "") {
+      const query = searchQuery.toLowerCase();
+      const filtered = mappedTransactions.filter(t => 
+        t.customerName.toLowerCase().includes(query) ||
+        t.id.toLowerCase().includes(query) ||
+        t.type.toLowerCase().includes(query) ||
+        t.totalAmount.toString().includes(query)
+      );
+      setFilteredTransactions(filtered);
+    } else {
+      setFilteredTransactions(mappedTransactions);
+    }
+    
+  }, [transactions, searchQuery]);
+
   // Function to view transaction details
   const handleViewTransaction = (transaction: ModelTransaction) => {
     console.log("Viewing transaction details:", transaction);
@@ -56,23 +93,6 @@ const Transactions = () => {
     setOpen(false);
     setEditingTransaction(undefined);
   };
-
-  // Map the AppContext transactions to match the model Transaction type
-  const mappedTransactions = transactions.map((t: any) => ({
-    id: t.id,
-    type: t.type,
-    customerName: t.customer || "Unknown",
-    customerPhone: t.customerPhone || "",
-    date: t.dateTime,
-    items: [],
-    totalAmount: t.totalPrice || 0,
-    paymentMethod: t.paymentMethod,
-    status: "completed",
-    currency: t.currency,
-    registerType: t.registerType || "Wholesale",
-    createdAt: new Date(t.dateTime),
-    updatedAt: new Date(t.dateTime)
-  })) as ModelTransaction[];
 
   // Map AppContext inventory items to ModelInventoryItem type
   const mappedInventory = inventory.map(item => {
@@ -116,6 +136,7 @@ const Transactions = () => {
               </Button>
             </DialogTrigger>
             <DialogContent className="p-0 max-w-4xl max-h-[90vh] w-[90vw]">
+              <DialogTitle className="sr-only">{editingTransaction ? 'Edit Transaction' : 'New Transaction'}</DialogTitle>
               <TransactionForm 
                 transaction={editingTransaction}
                 inventoryItems={mappedInventory}
@@ -126,8 +147,20 @@ const Transactions = () => {
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Search bar */}
+        <div className="mb-4 relative">
+          <Input
+            placeholder="Search transactions by customer name, ID, or type..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+          <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+        </div>
+
         <TransactionList 
-          transactions={mappedTransactions}
+          transactions={filteredTransactions}
           onCreateTransaction={() => {
             setEditingTransaction(undefined);
             setOpen(true);

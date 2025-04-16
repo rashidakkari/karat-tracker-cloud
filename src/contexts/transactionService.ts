@@ -1,12 +1,15 @@
-
-import { Transaction, InventoryItem, generateId } from './types';
+import { Transaction, InventoryItem, generateId, Currency } from './types';
 import { toast } from 'sonner';
 import { convertToGrams, getPurityFactor, calculateTransactionPrice } from '@/utils/goldCalculations';
+import { updateRegisterBalance, createCustomerDebt, verifyInventoryAvailability } from '@/utils/inventoryUtils';
 
 export const createTransactionService = (
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>,
   inventory: InventoryItem[],
-  updateInventoryItem: (id: string, updates: Partial<InventoryItem>) => void
+  updateInventoryItem: (id: string, updates: Partial<InventoryItem>) => void,
+  updateFinancial: (updates: any) => void,
+  financial: any,
+  addDebt: (debt: any) => void
 ) => {
   const addTransaction = (transaction: Omit<Transaction, "id" | "dateTime"> | any) => {
     console.log("Adding transaction with data:", transaction);
@@ -28,12 +31,22 @@ export const createTransactionService = (
       goldAmount: transaction.payments?.find((p: any) => p.method === 'Gold')?.amount || 0,
       customer: transaction.customerName || '',
       notes: transaction.notes || '',
-      customerPhone: transaction.customerPhone || ''
+      customerPhone: transaction.customerPhone || '',
+      registerType: transaction.registerType?.toLowerCase() || 'wholesale'
     };
     
     console.log("Formatted transaction:", newTransaction);
     
-    // Update inventory based on transaction items
+    // Calculate total payments
+    const totalPayments = (transaction.payments || []).reduce((total: number, payment: any) => {
+      return total + (payment.amount || 0);
+    }, 0);
+    
+    // Determine if there's an unpaid amount
+    const hasUnpaidAmount = totalPayments < transaction.totalAmount;
+    const unpaidAmount = transaction.totalAmount - totalPayments;
+    
+    // Update inventory and financial data based on transaction type
     if (transaction.items && Array.isArray(transaction.items)) {
       transaction.items.forEach((transactionItem: any) => {
         if (!transactionItem.inventoryItemId) return;
@@ -71,16 +84,36 @@ export const createTransactionService = (
           
           console.log(`- New Quantity: ${newQuantity} (+${transactionQuantity})`);
           console.log(`- New Weight: ${newWeight}${inventoryItem.weightUnit} (+${transactionWeight})`);
+          
+          // If unpaid, create a debt (we owe the customer)
+          if (hasUnpaidAmount) {
+            const debtDescription = `Owed to supplier for ${inventoryItem.name} (${transactionQuantity} items)`;
+            const newDebt = createCustomerDebt(
+              transaction.customerName,
+              transaction.customerPhone,
+              unpaidAmount,
+              transaction.currency,
+              debtDescription,
+              new Date().toISOString()
+            );
+            // Add as borrowed debt (we owe them)
+            addDebt({ ...newDebt, type: 'borrowed' });
+            console.log(`Created borrowed debt for unpaid amount: ${unpaidAmount} ${transaction.currency}`);
+          }
         } else if (transactionType === 'sell') {
           // Check if we have enough quantity
-          if (inventoryItem.quantity < transactionQuantity) {
+          const availability = verifyInventoryAvailability(
+            inventoryItem, 
+            transactionQuantity, 
+            transactionWeight
+          );
+          
+          if (!availability.quantityAvailable) {
             toast.error(`Not enough quantity in inventory for ${inventoryItem.name}`);
             return;
           }
           
-          // Check if we have enough weight (with a small tolerance)
-          const TOLERANCE = 0.001; // Small tolerance for floating point comparisons
-          if (inventoryItem.weight < (transactionWeight - TOLERANCE)) {
+          if (!availability.weightAvailable) {
             toast.error(`Not enough weight in inventory for ${inventoryItem.name}`);
             return;
           }
@@ -91,6 +124,22 @@ export const createTransactionService = (
           
           console.log(`- New Quantity: ${newQuantity} (-${transactionQuantity})`);
           console.log(`- New Weight: ${newWeight}${inventoryItem.weightUnit} (-${transactionWeight})`);
+          
+          // If unpaid, create a customer debt (they owe us)
+          if (hasUnpaidAmount) {
+            const debtDescription = `Owed by customer for ${inventoryItem.name} (${transactionQuantity} items)`;
+            const newDebt = createCustomerDebt(
+              transaction.customerName,
+              transaction.customerPhone,
+              unpaidAmount,
+              transaction.currency,
+              debtDescription,
+              new Date().toISOString()
+            );
+            // Add as customer debt (they owe us)
+            addDebt({ ...newDebt, type: 'customer' });
+            console.log(`Created customer debt for unpaid amount: ${unpaidAmount} ${transaction.currency}`);
+          }
         }
         
         // Recalculate 24K equivalent weight for updated inventory
@@ -107,6 +156,57 @@ export const createTransactionService = (
           equivalent24k: newEquivalent24k
         });
       });
+      
+      // Update register cash balance for paid amounts
+      if (transaction.payments && transaction.payments.length > 0) {
+        const cashPayment = transaction.payments.find((p: any) => p.method === 'Cash');
+        if (cashPayment && cashPayment.amount > 0) {
+          // For sell transactions, add cash to register; for buy transactions, subtract cash from register
+          const isAddition = transaction.type?.toLowerCase() === 'sell';
+          const registerType = transaction.registerType?.toLowerCase();
+          const updatedBalance = updateRegisterBalance(
+            registerType as "wholesale" | "retail",
+            cashPayment.amount,
+            transaction.currency,
+            isAddition,
+            financial
+          );
+          
+          // Update the financial data
+          const registerKey = registerType === "wholesale" ? "wholesaleBalance" : "retailBalance";
+          updateFinancial({
+            [registerKey]: updatedBalance
+          });
+          
+          console.log(`Updated ${registerType} register balance: ${JSON.stringify(updatedBalance)}`);
+        }
+        
+        // Process gold payments
+        const goldPayment = transaction.payments.find((p: any) => p.method === 'Gold');
+        if (goldPayment && goldPayment.goldWeight && goldPayment.goldPurity) {
+          // Create a virtual inventory item for the gold payment
+          const goldPaymentItem = {
+            id: generateId(),
+            name: `Gold Payment - ${transaction.id}`,
+            category: 'bars',
+            purity: goldPayment.goldPurity,
+            weight: goldPayment.goldWeight,
+            weightUnit: 'g',
+            quantity: 1,
+            type: transaction.registerType?.toLowerCase() || 'wholesale',
+            dateAdded: new Date().toISOString()
+          };
+          
+          // Add gold to inventory if we're selling (receiving gold as payment)
+          // Remove gold from inventory if we're buying (paying with gold)
+          if (transaction.type?.toLowerCase() === 'sell') {
+            // For now, just log this. This would require a separate feature to implement fully
+            console.log(`Received gold payment: ${goldPayment.goldWeight}g of ${goldPayment.goldPurity} purity`);
+          } else {
+            console.log(`Paid with gold: ${goldPayment.goldWeight}g of ${goldPayment.goldPurity} purity`);
+          }
+        }
+      }
     }
     
     // Add the transaction to the state
