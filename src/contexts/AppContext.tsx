@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { InventoryItem, Transaction, FinancialData, STORAGE_KEYS, DEFAULT_FINANCIAL, Currency } from './types';
+import { InventoryItem, Transaction, FinancialData, STORAGE_KEYS, DEFAULT_FINANCIAL, Currency, RegisterCashEntry } from './types';
 import { createInventoryService, calculateEquivalent24k } from './inventoryService';
 import { createTransactionService } from './transactionService';
 import { createFinancialService } from './financialService';
@@ -14,6 +14,8 @@ interface ExtendedFinancialData extends FinancialData {
   retailBalance?: { [key in Currency]: number };
   customerDebts?: Debt[];
   borrowedDebts?: Debt[];
+  registerCashEntries?: RegisterCashEntry[];
+  featuredItems?: string[]; // Array of featured item IDs
 }
 
 // Main app context type
@@ -26,6 +28,8 @@ interface AppContextType {
   addInventoryItem: (item: Omit<InventoryItem, "id" | "dateAdded" | "equivalent24k">) => void;
   updateInventoryItem: (id: string, updates: Partial<InventoryItem>) => void;
   removeInventoryItem: (id: string) => void;
+  toggleItemFeature: (id: string, featured: boolean) => void;
+  getFeaturedItems: () => InventoryItem[];
   
   // Transaction actions
   addTransaction: (transaction: Omit<Transaction, "id" | "dateTime"> & { registerType?: string }) => void;
@@ -50,6 +54,7 @@ interface AppContextType {
   updateFactoryDebt: (amount: number) => void;
   updateFinancial: (updates: Partial<ExtendedFinancialData>) => void;
   addDebt: (debt: any) => void;
+  addRegisterCashEntry: (entry: Omit<RegisterCashEntry, "id" | "date">) => void;
   
   // New debt management functions
   addDebtRecord: (
@@ -59,9 +64,12 @@ interface AppContextType {
     currency: string,
     description: string,
     type: 'customer' | 'borrowed',
-    dueDate?: string
+    dueDate?: string,
+    goldAmount?: number,
+    goldPurity?: string,
+    goldWeightUnit?: string
   ) => Debt;
-  recordDebtPayment: (debtId: string, amount: number, type: 'customer' | 'borrowed') => void;
+  recordDebtPayment: (debtId: string, amount: number, type: 'customer' | 'borrowed', goldAmount?: number, goldPurity?: string) => void;
   
   // Register management
   updateRegisterBalance: (
@@ -69,6 +77,9 @@ interface AppContextType {
     currency: Currency,
     amount: number
   ) => void;
+  
+  // Spot check functions
+  initiateSpotCheck: () => void;
   
   // Utility
   isLoading: boolean;
@@ -87,7 +98,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     wholesaleBalance: { USD: 0, EUR: 0, GBP: 0, CHF: 0 },
     retailBalance: { USD: 0, EUR: 0, GBP: 0, CHF: 0 },
     customerDebts: [],
-    borrowedDebts: []
+    borrowedDebts: [],
+    registerCashEntries: [],
+    featuredItems: []
   });
   const [isLoading, setIsLoading] = useState(true);
   
@@ -131,6 +144,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const financialService = createFinancialService(setFinancial);
   
+  // Toggle featured status for inventory items
+  const toggleItemFeature = (id: string, featured: boolean) => {
+    setFinancial(prev => {
+      const featuredItems = prev.featuredItems || [];
+      
+      if (featured) {
+        // Add to featured items if not already there
+        if (!featuredItems.includes(id)) {
+          return {
+            ...prev,
+            featuredItems: [...featuredItems, id]
+          };
+        }
+      } else {
+        // Remove from featured items
+        return {
+          ...prev,
+          featuredItems: featuredItems.filter(itemId => itemId !== id)
+        };
+      }
+      
+      return prev;
+    });
+  };
+  
+  // Get featured inventory items
+  const getFeaturedItems = (): InventoryItem[] => {
+    const featuredItemIds = financial.featuredItems || [];
+    return inventory.filter(item => featuredItemIds.includes(item.id));
+  };
+  
+  // Initiate spot check (navigate to spot check page)
+  const initiateSpotCheck = () => {
+    // This function will be a placeholder - the actual navigation will happen in the component
+    console.log("Initiating spot check");
+  };
+  
+  // Add register cash entry
+  const addRegisterCashEntry = (entry: Omit<RegisterCashEntry, "id" | "date">) => {
+    const newEntry: RegisterCashEntry = {
+      ...entry,
+      id: generateId(),
+      date: new Date().toISOString()
+    };
+    
+    // Update the register balance
+    const registerKey = entry.registerType === "wholesale" ? "wholesaleBalance" : "retailBalance";
+    
+    setFinancial(prev => {
+      const currentBalance = prev[registerKey]?.[entry.currency] || 0;
+      const newBalance = entry.type === "deposit" 
+        ? currentBalance + entry.amount 
+        : Math.max(0, currentBalance - entry.amount);
+        
+      return {
+        ...prev,
+        [registerKey]: {
+          ...(prev[registerKey] || {}),
+          [entry.currency]: newBalance
+        },
+        registerCashEntries: [...(prev.registerCashEntries || []), newEntry]
+      };
+    });
+    
+    toast.success(`Cash ${entry.type} to ${entry.registerType} register recorded`);
+  };
+  
   // Load data from localStorage on mount
   useEffect(() => {
     const loadData = () => {
@@ -157,7 +237,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             wholesaleBalance: parsedFinancial.wholesaleBalance || { USD: 0, EUR: 0, GBP: 0, CHF: 0 },
             retailBalance: parsedFinancial.retailBalance || { USD: 0, EUR: 0, GBP: 0, CHF: 0 },
             customerDebts: parsedFinancial.customerDebts || [],
-            borrowedDebts: parsedFinancial.borrowedDebts || []
+            borrowedDebts: parsedFinancial.borrowedDebts || [],
+            registerCashEntries: parsedFinancial.registerCashEntries || [],
+            featuredItems: parsedFinancial.featuredItems || []
           });
         }
       } catch (error) {
@@ -226,11 +308,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...financialService,
         updateFinancial,
         addDebt,
+        addRegisterCashEntry,
         // Expose new debt management functions
         addDebtRecord: financialService.addDebt,
         recordDebtPayment: financialService.recordPayment,
         // Expose register management function
         updateRegisterBalance: financialService.updateRegisterBalance,
+        // Feature item management
+        toggleItemFeature,
+        getFeaturedItems,
+        // Spot check
+        initiateSpotCheck,
         isLoading,
         calculateEquivalent24k
       }}

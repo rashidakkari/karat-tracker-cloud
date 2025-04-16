@@ -6,6 +6,7 @@ import FinancialSummary from "@/components/financial/FinancialSummary";
 import BalanceManager from "@/components/financial/BalanceManager";
 import ExpenseForm from "@/components/financial/ExpenseForm";
 import DebtList from "@/components/financial/DebtList";
+import RegisterCashManager from "@/components/financial/RegisterCashManager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useApp } from "@/contexts/AppContext";
 
@@ -19,9 +20,10 @@ const Finance = () => {
         <h1 className="text-3xl font-bold mb-6 text-amber-800">Financial Management</h1>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList className="grid grid-cols-5 w-full">
+          <TabsList className="grid grid-cols-6 w-full">
             <TabsTrigger value="summary">Summary</TabsTrigger>
             <TabsTrigger value="cash">Cash Balance</TabsTrigger>
+            <TabsTrigger value="registers">Registers</TabsTrigger>
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
             <TabsTrigger value="customer-debt">Customer Debt</TabsTrigger>
             <TabsTrigger value="borrowed-debt">Borrowed Debt</TabsTrigger>
@@ -33,6 +35,10 @@ const Finance = () => {
           
           <TabsContent value="cash" className="pt-4">
             <BalanceManager />
+          </TabsContent>
+          
+          <TabsContent value="registers" className="pt-4">
+            <RegisterCashManager />
           </TabsContent>
           
           <TabsContent value="expenses" className="pt-4">
@@ -51,7 +57,7 @@ const Finance = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Customer Debt Management</CardTitle>
-                <CardDescription>Track money customers owe to your business</CardDescription>
+                <CardDescription>Track money and gold customers owe to your business</CardDescription>
               </CardHeader>
               <CardContent>
                 <DebtList title="Customer Debts" type="customer" />
@@ -63,7 +69,7 @@ const Finance = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Borrowed Debt Management</CardTitle>
-                <CardDescription>Track money your business owes to others</CardDescription>
+                <CardDescription>Track money and gold your business owes to others</CardDescription>
               </CardHeader>
               <CardContent>
                 <DebtList title="Borrowed Debts" type="borrowed" />

@@ -1,5 +1,5 @@
 
-import { FinancialData, Currency } from './types';
+import { FinancialData, Currency, RegisterCashEntry } from './types';
 import { toast } from 'sonner';
 import { createDebtRecord, Debt, recordDebtPayment } from '@/utils/debtUtils';
 
@@ -9,6 +9,7 @@ interface ExtendedFinancialData extends FinancialData {
   retailBalance?: { [key in Currency]: number };
   customerDebts?: Debt[];
   borrowedDebts?: Debt[];
+  registerCashEntries?: RegisterCashEntry[];
 }
 
 export const createFinancialService = (
@@ -75,6 +76,35 @@ export const createFinancialService = (
     toast.success(`${Math.abs(amount)} ${currency} ${action} ${registerType} register`);
   };
   
+  const addRegisterCashEntry = (entry: Omit<RegisterCashEntry, "id" | "date">) => {
+    const newEntry: RegisterCashEntry = {
+      ...entry,
+      id: Date.now().toString(36) + Math.random().toString(36).substring(2),
+      date: new Date().toISOString()
+    };
+    
+    // Update the register balance
+    const registerKey = entry.registerType === "wholesale" ? "wholesaleBalance" : "retailBalance";
+    
+    setFinancial(prev => {
+      const currentBalance = prev[registerKey]?.[entry.currency] || 0;
+      const newBalance = entry.type === "deposit" 
+        ? currentBalance + entry.amount 
+        : Math.max(0, currentBalance - entry.amount);
+        
+      return {
+        ...prev,
+        [registerKey]: {
+          ...(prev[registerKey] || {}),
+          [entry.currency]: newBalance
+        },
+        registerCashEntries: [...(prev.registerCashEntries || []), newEntry]
+      };
+    });
+    
+    toast.success(`Cash ${entry.type} to ${entry.registerType} register recorded`);
+  };
+  
   const updateCustomerDebt = (amount: number) => {
     setFinancial(prev => ({
       ...prev,
@@ -109,7 +139,10 @@ export const createFinancialService = (
     currency: string,
     description: string,
     type: 'customer' | 'borrowed',
-    dueDate?: string
+    dueDate?: string,
+    goldAmount?: number,
+    goldPurity?: string,
+    goldWeightUnit?: string
   ) => {
     const newDebt = createDebtRecord(
       personName,
@@ -118,7 +151,10 @@ export const createFinancialService = (
       currency,
       description,
       type,
-      dueDate
+      dueDate,
+      goldAmount,
+      goldPurity,
+      goldWeightUnit
     );
     
     setFinancial(prev => {
@@ -142,7 +178,7 @@ export const createFinancialService = (
   };
   
   // Record a payment for a debt
-  const recordPayment = (debtId: string, amount: number, type: 'customer' | 'borrowed') => {
+  const recordPayment = (debtId: string, amount: number, type: 'customer' | 'borrowed', goldAmount?: number, goldPurity?: string) => {
     setFinancial(prev => {
       if (type === 'customer') {
         const debts = prev.customerDebts || [];
@@ -153,7 +189,7 @@ export const createFinancialService = (
           return prev;
         }
         
-        const updatedDebt = recordDebtPayment(debts[debtIndex], amount);
+        const updatedDebt = recordDebtPayment(debts[debtIndex], amount, goldAmount, goldPurity);
         const updatedDebts = [...debts];
         updatedDebts[debtIndex] = updatedDebt;
         
@@ -175,7 +211,7 @@ export const createFinancialService = (
           return prev;
         }
         
-        const updatedDebt = recordDebtPayment(debts[debtIndex], amount);
+        const updatedDebt = recordDebtPayment(debts[debtIndex], amount, goldAmount, goldPurity);
         const updatedDebts = [...debts];
         updatedDebts[debtIndex] = updatedDebt;
         
@@ -193,6 +229,31 @@ export const createFinancialService = (
     
     toast.success(`Payment recorded for ${type === 'customer' ? 'customer' : 'borrowed'} debt`);
   };
+  
+  // Toggle featured status for inventory items
+  const toggleItemFeature = (itemId: string, featured: boolean) => {
+    setFinancial(prev => {
+      const featuredItems = prev.featuredItems || [];
+      
+      if (featured) {
+        // Add to featured items if not already there
+        if (!featuredItems.includes(itemId)) {
+          return {
+            ...prev,
+            featuredItems: [...featuredItems, itemId]
+          };
+        }
+      } else {
+        // Remove from featured items
+        return {
+          ...prev,
+          featuredItems: featuredItems.filter(id => id !== itemId)
+        };
+      }
+      
+      return prev;
+    });
+  };
 
   return {
     updateSpotPrice,
@@ -201,7 +262,9 @@ export const createFinancialService = (
     updateCustomerDebt,
     updateFactoryDebt,
     updateRegisterBalance,
+    addRegisterCashEntry,
     addDebt,
-    recordPayment
+    recordPayment,
+    toggleItemFeature
   };
 };

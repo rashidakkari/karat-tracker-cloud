@@ -14,6 +14,7 @@ export interface InventoryItem {
   description?: string;
   equivalent24k: number; // Weight in 24K equivalent
   costPrice?: number;
+  featured?: boolean; // Flag to feature item on dashboard
 }
 
 // Types for transactions
@@ -38,6 +39,8 @@ export interface Transaction {
   notes?: string;
   customerPhone?: string;
   registerType?: "wholesale" | "retail";
+  goldPurity?: string;
+  goldWeightUnit?: "g" | "oz"; 
 }
 
 // Debt type
@@ -47,6 +50,9 @@ export interface Debt {
   contactInfo?: string;
   amount: number;
   currency: string;
+  goldAmount?: number;
+  goldPurity?: string;
+  goldWeightUnit?: string;
   date: string;
   dueDate?: string;
   description: string;
@@ -54,8 +60,21 @@ export interface Debt {
   partialPayments?: {
     date: string;
     amount: number;
+    goldAmount?: number;
+    goldPurity?: string;
   }[];
   type: 'customer' | 'borrowed';
+}
+
+// Register Cash Entry
+export interface RegisterCashEntry {
+  id: string;
+  registerType: "wholesale" | "retail";
+  currency: Currency;
+  amount: number;
+  date: string;
+  description: string;
+  type: "deposit" | "withdrawal";
 }
 
 // Types for financial data
@@ -76,6 +95,7 @@ export interface FinancialData {
   retailBalance?: { [key in Currency]: number };
   customerDebts?: Debt[];
   borrowedDebts?: Debt[];
+  registerCashEntries?: RegisterCashEntry[];
 }
 
 // Storage keys
@@ -95,10 +115,33 @@ export const DEFAULT_FINANCIAL: FinancialData = {
   wholesaleBalance: { USD: 0, EUR: 0, GBP: 0, CHF: 0 },
   retailBalance: { USD: 0, EUR: 0, GBP: 0, CHF: 0 },
   customerDebts: [],
-  borrowedDebts: []
+  borrowedDebts: [],
+  registerCashEntries: []
 };
 
 // Helper function to generate a unique ID
 export const generateId = (): string => {
   return Date.now().toString(36) + Math.random().toString(36).substring(2);
+};
+
+// Purity conversion mapping
+export const PURITY_MAPPING = {
+  BUYING: {
+    '999.9': '999.9',
+    '995': '995',
+    '22K': '916',
+    '21K': '875',
+    '18K': '750',
+    '14K': '583',
+    '9K': '375'
+  },
+  SELLING: {
+    '999.9': '999.9',
+    '995': '995',
+    '22K': '916',
+    '21K': '865',
+    '18K': '740',
+    '14K': '583',
+    '9K': '375'
+  }
 };
