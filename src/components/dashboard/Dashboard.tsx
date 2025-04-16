@@ -1,8 +1,8 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useApp, Currency } from "@/contexts/AppContext";
 import { formatCurrency, formatWeight } from "@/utils/formatters";
-import { DollarSign, Scale, Users, Factory } from "lucide-react";
+import { DollarSign, Scale, Users, CreditCard } from "lucide-react";
 import StatCard from "./StatCard";
 import PriceChart from "./PriceChart";
 import InventoryDistributionChart from "./InventoryDistributionChart";
@@ -11,6 +11,12 @@ import LowStockAlerts from "./LowStockAlerts";
 import SpotPriceUpdater from "./SpotPriceUpdater";
 import { InventoryItem as ModelInventoryItem } from "@/models/inventory";
 import { getPurityFactor, convertToGrams } from "@/utils/goldCalculations";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Search, ArrowRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const spotPriceHistory = [
   { date: "Jan", price: 1950 },
@@ -25,12 +31,31 @@ const spotPriceHistory = [
 const Dashboard: React.FC = () => {
   const { inventory, transactions, financial, updateSpotPrice } = useApp();
   const [currency] = React.useState<Currency>("USD");
+  const [registerFilter, setRegisterFilter] = useState<"all" | "wholesale" | "retail">("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [pinnedItems, setPinnedItems] = useState<string[]>([]);
+  
+  // Get customer debts and borrowed debts totals
+  const customerDebtTotal = (financial.customerDebts || []).reduce(
+    (total, debt) => total + debt.amount,
+    0
+  );
+  
+  const borrowedDebtTotal = (financial.borrowedDebts || []).reduce(
+    (total, debt) => total + debt.amount,
+    0
+  );
+  
+  // Filter inventory by register type if needed
+  const filteredInventory = registerFilter === "all" 
+    ? inventory 
+    : inventory.filter(item => item.type === registerFilter);
   
   // Calculate inventory distribution for the chart
   const inventoryDistribution = React.useMemo(() => {
     const distribution = { "Bars": 0, "Coins": 0, "Jewelry": 0 };
     
-    inventory.forEach(item => {
+    filteredInventory.forEach(item => {
       const category = item.category.charAt(0).toUpperCase() + item.category.slice(1);
       distribution[category as keyof typeof distribution] += item.equivalent24k || 0;
     });
@@ -39,14 +64,13 @@ const Dashboard: React.FC = () => {
       name,
       value: Math.round(value) // Round to nearest gram for better display
     }));
-  }, [inventory]);
+  }, [filteredInventory]);
   
   const COLORS = ["#D4AF37", "#AA8C2C", "#F6E5A1"];
   
   // Calculate total 24K equivalent weight
-  const total24kWeight = inventory.reduce((total, item) => {
+  const total24kWeight = filteredInventory.reduce((total, item) => {
     const weightInGrams = convertToGrams(item.weight, item.weightUnit);
-    
     const purityFactor = getPurityFactor(item.purity);
     const pureGoldWeight = weightInGrams * purityFactor;
     
@@ -88,9 +112,44 @@ const Dashboard: React.FC = () => {
   };
   
   // Get items with low stock for alerts
-  const lowStockItems = inventory
+  const lowStockItems = filteredInventory
     .filter(item => item.quantity <= 2)
     .map(mapToModelInventoryItem);
+  
+  // Handle search and spotcheck functionality
+  const searchResults = searchQuery.trim() !== "" 
+    ? inventory.filter(item => 
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.id.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : [];
+    
+  // Pin/unpin items for the dashboard
+  const togglePinItem = (itemId: string) => {
+    setPinnedItems(prev => 
+      prev.includes(itemId) 
+        ? prev.filter(id => id !== itemId)
+        : [...prev, itemId]
+    );
+  };
+  
+  // Get all pinned items
+  const pinnedItemsDetails = inventory.filter(item => pinnedItems.includes(item.id));
+  
+  // Get the register balance based on selected type
+  const getRegisterBalance = () => {
+    if (registerFilter === "wholesale") {
+      return financial.wholesaleBalance?.[currency] || 0;
+    } else if (registerFilter === "retail") {
+      return financial.retailBalance?.[currency] || 0;
+    } else {
+      // For "all", sum both registers
+      const wholesaleBalance = financial.wholesaleBalance?.[currency] || 0;
+      const retailBalance = financial.retailBalance?.[currency] || 0;
+      return wholesaleBalance + retailBalance;
+    }
+  };
   
   return (
     <div className="space-y-6">
@@ -101,6 +160,23 @@ const Dashboard: React.FC = () => {
         </div>
         
         <SpotPriceUpdater currentPrice={financial.spotPrice} onUpdate={updateSpotPrice} />
+      </div>
+      
+      {/* Register selector */}
+      <div className="flex items-center space-x-4">
+        <Select value={registerFilter} onValueChange={(value) => setRegisterFilter(value as any)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select Register" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Registers</SelectItem>
+            <SelectItem value="wholesale">Wholesale Register</SelectItem>
+            <SelectItem value="retail">Retail Register</SelectItem>
+          </SelectContent>
+        </Select>
+        <span className="text-sm text-muted-foreground">
+          {registerFilter === "all" ? "Viewing all registers" : `Viewing ${registerFilter} register`}
+        </span>
       </div>
       
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
@@ -115,7 +191,7 @@ const Dashboard: React.FC = () => {
         />
         
         <StatCard
-          title="Total Inventory (24K)"
+          title={`${registerFilter === "all" ? "Total" : registerFilter.charAt(0).toUpperCase() + registerFilter.slice(1)} Inventory (24K)`}
           value={formatWeight(total24kWeight)}
           description="across all categories"
           icon={<Scale className="h-4 w-4" />}
@@ -124,18 +200,115 @@ const Dashboard: React.FC = () => {
         
         <StatCard
           title="Customer Debt"
-          value={formatCurrency(financial.customerDebt, currency)}
+          value={formatCurrency(customerDebtTotal, currency)}
+          description="customers owe you"
           icon={<Users className="h-4 w-4" />}
           delay={2}
         />
         
         <StatCard
-          title="Factory Debt"
-          value={formatCurrency(financial.factoryDebt, currency)}
-          icon={<Factory className="h-4 w-4" />}
+          title="Borrowed Debt"
+          value={formatCurrency(borrowedDebtTotal, currency)}
+          description="you owe others"
+          icon={<CreditCard className="h-4 w-4" />}
           delay={3}
         />
       </div>
+      
+      {/* Cash balance card */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Register Cash Balance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(getRegisterBalance(), currency)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {registerFilter === "all" ? "Combined registers" : `${registerFilter} register`}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Spot check functionality */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-medium">Inventory Spot Check</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-2 mb-4">
+            <div className="relative flex-1">
+              <Input 
+                placeholder="Search inventory items..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+              <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+            </div>
+          </div>
+          
+          {searchQuery && searchResults.length > 0 && (
+            <div className="mb-4">
+              <h4 className="text-sm font-medium mb-2">Search Results</h4>
+              <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                {searchResults.map(item => (
+                  <div key={item.id} className="flex items-center justify-between p-2 border rounded-md">
+                    <div>
+                      <div className="font-medium">{item.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {item.category} • {item.purity} • {item.weight}{item.weightUnit} • Qty: {item.quantity}
+                      </div>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => togglePinItem(item.id)}
+                    >
+                      {pinnedItems.includes(item.id) ? "Unpin" : "Pin"}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {pinnedItemsDetails.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium mb-2">Pinned Items</h4>
+              <div className="space-y-2">
+                {pinnedItemsDetails.map(item => (
+                  <div key={item.id} className="flex items-center justify-between p-2 border rounded-md bg-amber-50">
+                    <div>
+                      <div className="font-medium flex items-center">
+                        {item.name}
+                        <Badge className="ml-2" variant={item.type === "wholesale" ? "outline" : "default"}>
+                          {item.type}
+                        </Badge>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {item.category} • {item.purity} • {item.weight}{item.weightUnit}
+                      </div>
+                      <div className="text-sm font-medium">
+                        Quantity: {item.quantity} • 24K Equivalent: {formatWeight(item.equivalent24k || 0)}
+                      </div>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => togglePinItem(item.id)}
+                    >
+                      Unpin
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
       
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         <PriceChart data={spotPriceHistory} />

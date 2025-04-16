@@ -1,16 +1,19 @@
+
 import React, { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import TransactionList from "@/components/transactions/TransactionList";
 import { Button } from "@/components/ui/button";
 import TransactionForm from "@/components/transactions/TransactionForm";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { PlusIcon, Search, Filter } from "lucide-react";
+import { PlusIcon, Search, Filter, FileText } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
-import { Transaction as ModelTransaction, TransactionItem } from "@/models/transactions";
+import { Transaction as ModelTransaction } from "@/models/transactions";
 import { InventoryItem as ModelInventoryItem, ItemCategory } from "@/models/inventory";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Transactions = () => {
   const [open, setOpen] = useState(false);
@@ -18,6 +21,7 @@ const Transactions = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [filteredTransactions, setFilteredTransactions] = useState<ModelTransaction[]>([]);
+  const [activeTab, setActiveTab] = useState("all");
   const { transactions, inventory, financial, addTransaction, updateTransaction } = useApp();
   
   // Map the AppContext transactions to match the model Transaction type and filter them
@@ -38,12 +42,19 @@ const Transactions = () => {
       updatedAt: new Date(t.dateTime)
     })) as ModelTransaction[];
     
+    // Apply register filter based on active tab
+    let registerFiltered = mappedTransactions;
+    if (activeTab !== "all") {
+      registerFiltered = mappedTransactions.filter(t => 
+        t.registerType.toLowerCase() === activeTab.toLowerCase()
+      );
+    }
+    
     // Apply type filtering if selected
-    let typeFiltered = mappedTransactions;
+    let typeFiltered = registerFiltered;
     if (filterType !== 'all') {
-      typeFiltered = mappedTransactions.filter(t => 
-        t.type.toLowerCase() === filterType.toLowerCase() || 
-        t.registerType.toLowerCase() === filterType.toLowerCase()
+      typeFiltered = registerFiltered.filter(t => 
+        t.type.toLowerCase() === filterType.toLowerCase()
       );
     }
     
@@ -61,7 +72,7 @@ const Transactions = () => {
       setFilteredTransactions(typeFiltered);
     }
     
-  }, [transactions, searchQuery, filterType]);
+  }, [transactions, searchQuery, filterType, activeTab]);
 
   // Function to view transaction details
   const handleViewTransaction = (transaction: ModelTransaction) => {
@@ -116,30 +127,7 @@ const Transactions = () => {
       purity: item.purity,
       quantity: item.quantity,
       // The costPrice field in the model is required
-      costPrice: 0, // Default value
-      sellingPrice: 0,
-      equivalent24k: item.equivalent24k || 0,
-      description: item.description || '',
-      dateAcquired: item.dateAdded || '',
-      isAvailable: true,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    // If the item from context has costPrice, use it with proper type checking
-    if ('costPrice' in item && typeof item.costPrice === 'number') {
-      mappedItem.costPrice = item.costPrice;
-    }
-    
-    return {
-      id: item.id,
-      name: item.name,
-      category: item.category as any,
-      weight: item.weight,
-      weightUnit: item.weightUnit === "kg" ? "g" : item.weightUnit as any, 
-      purity: item.purity,
-      quantity: item.quantity,
-      costPrice: 0,
+      costPrice: item.costPrice || 0,
       sellingPrice: 0,
       equivalent24k: item.equivalent24k || 0,
       description: item.description || '',
@@ -147,9 +135,25 @@ const Transactions = () => {
       isAvailable: true,
       createdAt: new Date(),
       updatedAt: new Date(),
-      type: item.type // Add the type property
+      type: item.type
     };
+    
+    return mappedItem;
   });
+
+  // Get transaction counts by register and type
+  const getTransactionCounts = () => {
+    const counts = {
+      all: transactions.length,
+      wholesale: transactions.filter(t => t.registerType?.toLowerCase() === 'wholesale').length,
+      retail: transactions.filter(t => t.registerType?.toLowerCase() === 'retail').length,
+      buy: transactions.filter(t => t.type === 'buy').length,
+      sell: transactions.filter(t => t.type === 'sell').length
+    };
+    return counts;
+  };
+  
+  const transactionCounts = getTransactionCounts();
 
   return (
     <AppLayout>
@@ -175,6 +179,104 @@ const Transactions = () => {
           </Dialog>
         </div>
 
+        {/* Transaction Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          <Card className={`${activeTab === 'all' ? 'border-2 border-amber-500' : ''}`}>
+            <CardHeader className="py-2">
+              <CardTitle className="text-sm font-medium flex justify-between items-center">
+                All Transactions
+                <span className="text-xl font-bold">{transactionCounts.all}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="py-2">
+              <Button 
+                variant={activeTab === 'all' ? "default" : "outline"} 
+                size="sm" 
+                className="w-full"
+                onClick={() => setActiveTab('all')}
+              >
+                View All
+              </Button>
+            </CardContent>
+          </Card>
+          
+          <Card className={`${activeTab === 'wholesale' ? 'border-2 border-amber-500' : ''}`}>
+            <CardHeader className="py-2">
+              <CardTitle className="text-sm font-medium flex justify-between items-center">
+                Wholesale
+                <span className="text-xl font-bold">{transactionCounts.wholesale}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="py-2">
+              <Button 
+                variant={activeTab === 'wholesale' ? "default" : "outline"} 
+                size="sm" 
+                className="w-full"
+                onClick={() => setActiveTab('wholesale')}
+              >
+                Wholesale Only
+              </Button>
+            </CardContent>
+          </Card>
+          
+          <Card className={`${activeTab === 'retail' ? 'border-2 border-amber-500' : ''}`}>
+            <CardHeader className="py-2">
+              <CardTitle className="text-sm font-medium flex justify-between items-center">
+                Retail
+                <span className="text-xl font-bold">{transactionCounts.retail}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="py-2">
+              <Button 
+                variant={activeTab === 'retail' ? "default" : "outline"} 
+                size="sm" 
+                className="w-full"
+                onClick={() => setActiveTab('retail')}
+              >
+                Retail Only
+              </Button>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="py-2">
+              <CardTitle className="text-sm font-medium flex justify-between items-center">
+                Buy Transactions
+                <span className="text-xl font-bold">{transactionCounts.buy}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="py-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full"
+                onClick={() => setFilterType('buy')}
+              >
+                Filter Buy
+              </Button>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="py-2">
+              <CardTitle className="text-sm font-medium flex justify-between items-center">
+                Sell Transactions
+                <span className="text-xl font-bold">{transactionCounts.sell}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="py-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full"
+                onClick={() => setFilterType('sell')}
+              >
+                Filter Sell
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Enhanced Search and Filter */}
         <div className="mb-4 flex space-x-2">
           <div className="relative flex-1">
@@ -195,18 +297,24 @@ const Transactions = () => {
               <SelectTrigger className="w-full">
                 <span className="flex items-center">
                   <Filter className="h-4 w-4 mr-2" />
-                  <span>{filterType === 'all' ? 'All Transactions' : filterType}</span>
+                  <span>{filterType === 'all' ? 'All Types' : filterType}</span>
                 </span>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Transactions</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="buy">Buy Transactions</SelectItem>
                 <SelectItem value="sell">Sell Transactions</SelectItem>
-                <SelectItem value="wholesale">Wholesale Register</SelectItem>
-                <SelectItem value="retail">Retail Register</SelectItem>
               </SelectContent>
             </Select>
           </div>
+          
+          <Button variant="outline" onClick={() => {
+            setSearchQuery('');
+            setFilterType('all');
+            setActiveTab('all');
+          }}>
+            Clear Filters
+          </Button>
         </div>
 
         <TransactionList 

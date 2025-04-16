@@ -6,13 +6,14 @@ import { createTransactionService } from './transactionService';
 import { createFinancialService } from './financialService';
 import { toast } from "sonner";
 import { calculateTransactionPrice } from "@/utils/goldCalculations";
+import { Debt } from "@/utils/debtUtils";
 
 // Extended financial data type
 interface ExtendedFinancialData extends FinancialData {
   wholesaleBalance?: { [key in Currency]: number };
   retailBalance?: { [key in Currency]: number };
-  customerDebts?: any[];
-  borrowedDebts?: any[];
+  customerDebts?: Debt[];
+  borrowedDebts?: Debt[];
 }
 
 // Main app context type
@@ -49,6 +50,25 @@ interface AppContextType {
   updateFactoryDebt: (amount: number) => void;
   updateFinancial: (updates: Partial<ExtendedFinancialData>) => void;
   addDebt: (debt: any) => void;
+  
+  // New debt management functions
+  addDebtRecord: (
+    personName: string,
+    contactInfo: string | undefined,
+    amount: number,
+    currency: string,
+    description: string,
+    type: 'customer' | 'borrowed',
+    dueDate?: string
+  ) => Debt;
+  recordDebtPayment: (debtId: string, amount: number, type: 'customer' | 'borrowed') => void;
+  
+  // Register management
+  updateRegisterBalance: (
+    registerType: "wholesale" | "retail",
+    currency: Currency,
+    amount: number
+  ) => void;
   
   // Utility
   isLoading: boolean;
@@ -206,6 +226,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...financialService,
         updateFinancial,
         addDebt,
+        // Expose new debt management functions
+        addDebtRecord: financialService.addDebt,
+        recordDebtPayment: financialService.recordPayment,
+        // Expose register management function
+        updateRegisterBalance: financialService.updateRegisterBalance,
         isLoading,
         calculateEquivalent24k
       }}

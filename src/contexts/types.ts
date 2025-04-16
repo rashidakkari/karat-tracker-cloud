@@ -1,3 +1,4 @@
+
 // Types for inventory items
 export interface InventoryItem {
   id: string;
@@ -39,6 +40,24 @@ export interface Transaction {
   registerType?: "wholesale" | "retail";
 }
 
+// Debt type
+export interface Debt {
+  id: string;
+  personName: string;
+  contactInfo?: string;
+  amount: number;
+  currency: string;
+  date: string;
+  dueDate?: string;
+  description: string;
+  status: 'pending' | 'partially_paid' | 'paid';
+  partialPayments?: {
+    date: string;
+    amount: number;
+  }[];
+  type: 'customer' | 'borrowed';
+}
+
 // Types for financial data
 export interface FinancialData {
   spotPrice: number; // Current gold spot price
@@ -53,6 +72,10 @@ export interface FinancialData {
     date: string;
     description: string;
   }[];
+  wholesaleBalance?: { [key in Currency]: number };
+  retailBalance?: { [key in Currency]: number };
+  customerDebts?: Debt[];
+  borrowedDebts?: Debt[];
 }
 
 // Storage keys
@@ -68,7 +91,11 @@ export const DEFAULT_FINANCIAL: FinancialData = {
   cashBalance: { USD: 0, EUR: 0, GBP: 0, CHF: 0 },
   customerDebt: 0,
   factoryDebt: 0,
-  expenses: []
+  expenses: [],
+  wholesaleBalance: { USD: 0, EUR: 0, GBP: 0, CHF: 0 },
+  retailBalance: { USD: 0, EUR: 0, GBP: 0, CHF: 0 },
+  customerDebts: [],
+  borrowedDebts: []
 };
 
 // Helper function to generate a unique ID
