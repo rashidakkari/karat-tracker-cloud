@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useApp, Currency } from "@/contexts/AppContext";
 import { formatCurrency, formatWeight } from "@/utils/formatters";
@@ -21,18 +22,28 @@ const spotPriceHistory = [
   { date: "Jul", price: 2250 },
 ];
 
-const inventoryData = [
-  { name: "Bars", value: 60 },
-  { name: "Jewelry", value: 30 },
-  { name: "Coins", value: 10 },
-];
-
-const COLORS = ["#D4AF37", "#AA8C2C", "#F6E5A1"];
-
 const Dashboard: React.FC = () => {
   const { inventory, transactions, financial, updateSpotPrice } = useApp();
   const [currency] = React.useState<Currency>("USD");
   
+  // Calculate inventory distribution for the chart
+  const inventoryDistribution = React.useMemo(() => {
+    const distribution = { "Bars": 0, "Coins": 0, "Jewelry": 0 };
+    
+    inventory.forEach(item => {
+      const category = item.category.charAt(0).toUpperCase() + item.category.slice(1);
+      distribution[category as keyof typeof distribution] += item.equivalent24k || 0;
+    });
+    
+    return Object.entries(distribution).map(([name, value]) => ({
+      name,
+      value: Math.round(value) // Round to nearest gram for better display
+    }));
+  }, [inventory]);
+  
+  const COLORS = ["#D4AF37", "#AA8C2C", "#F6E5A1"];
+  
+  // Calculate total 24K equivalent weight
   const total24kWeight = inventory.reduce((total, item) => {
     const weightInGrams = convertToGrams(item.weight, item.weightUnit);
     
@@ -46,6 +57,7 @@ const Dashboard: React.FC = () => {
   
   console.log(`Total 24K equivalent weight: ${total24kWeight}g`);
 
+  // Get recent transactions from the last 7 days
   const recentTransactions = transactions
     .filter(tx => {
       const txDate = new Date(tx.dateTime);
@@ -55,6 +67,7 @@ const Dashboard: React.FC = () => {
     })
     .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
   
+  // Map inventory items to model format for low stock alerts
   const mapToModelInventoryItem = (item: typeof inventory[0]): ModelInventoryItem => {
     return {
       id: item.id,
@@ -74,6 +87,7 @@ const Dashboard: React.FC = () => {
     };
   };
   
+  // Get items with low stock for alerts
   const lowStockItems = inventory
     .filter(item => item.quantity <= 2)
     .map(mapToModelInventoryItem);
@@ -125,7 +139,7 @@ const Dashboard: React.FC = () => {
       
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         <PriceChart data={spotPriceHistory} />
-        <InventoryDistributionChart data={inventoryData} colors={COLORS} />
+        <InventoryDistributionChart data={inventoryDistribution} colors={COLORS} />
       </div>
       
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">

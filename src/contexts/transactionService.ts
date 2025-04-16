@@ -1,5 +1,7 @@
+
 import { Transaction, InventoryItem, generateId } from './types';
 import { toast } from 'sonner';
+import { convertToGrams, getPurityFactor, calculateTransactionPrice } from '@/utils/goldCalculations';
 
 export const createTransactionService = (
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>,
@@ -37,7 +39,10 @@ export const createTransactionService = (
         if (!transactionItem.inventoryItemId) return;
         
         const inventoryItem = inventory.find(i => i.id === transactionItem.inventoryItemId);
-        if (!inventoryItem) return;
+        if (!inventoryItem) {
+          console.error(`Inventory item with ID ${transactionItem.inventoryItemId} not found`);
+          return;
+        }
         
         // Check if transaction register type matches inventory item type
         const registerType = transaction.registerType?.toLowerCase() || 'wholesale';
@@ -46,35 +51,65 @@ export const createTransactionService = (
           return;
         }
         
+        // Extract transaction details
         const transactionQuantity = transactionItem.quantity || 0;
+        const transactionWeight = transactionItem.weight || 0;
+        const transactionType = transaction.type?.toLowerCase() === 'buy' ? 'buy' : 'sell';
         
-        // Calculate total weight being transacted
-        const totalWeightChange = transactionItem.weight || 0;
+        console.log(`Processing ${transactionType} transaction for ${inventoryItem.name}:`);
+        console.log(`- Current Quantity: ${inventoryItem.quantity}, Transaction Quantity: ${transactionQuantity}`);
+        console.log(`- Current Weight: ${inventoryItem.weight}${inventoryItem.weightUnit}, Transaction Weight: ${transactionWeight}${inventoryItem.weightUnit || 'g'}`);
         
-        console.log(`Inventory update - Item: ${inventoryItem.name}, Current Weight: ${inventoryItem.weight}, Weight Change: ${totalWeightChange}`);
+        // Calculate new weight and quantity based on transaction type
+        let newQuantity = inventoryItem.quantity;
+        let newWeight = inventoryItem.weight;
         
-        if (transaction.type === "Buy" || transaction.type === "buy") {
+        if (transactionType === 'buy') {
           // Adding to inventory (buying from customer)
-          updateInventoryItem(inventoryItem.id, { 
-            quantity: inventoryItem.quantity + transactionQuantity,
-            weight: inventoryItem.weight + totalWeightChange
-          });
-          console.log(`Increased inventory for ${inventoryItem.name} by ${transactionQuantity} units and ${totalWeightChange}${inventoryItem.weightUnit}`);
-        } else if (transaction.type === "Sell" || transaction.type === "sell") {
-          // Removing from inventory (selling to customer)
-          if (inventoryItem.quantity >= transactionQuantity) {
-            updateInventoryItem(inventoryItem.id, { 
-              quantity: inventoryItem.quantity - transactionQuantity,
-              weight: Math.max(0, inventoryItem.weight - totalWeightChange)
-            });
-            console.log(`Decreased inventory for ${inventoryItem.name} by ${transactionQuantity} units and ${totalWeightChange}${inventoryItem.weightUnit}`);
-          } else {
+          newQuantity = inventoryItem.quantity + transactionQuantity;
+          newWeight = inventoryItem.weight + transactionWeight;
+          
+          console.log(`- New Quantity: ${newQuantity} (+${transactionQuantity})`);
+          console.log(`- New Weight: ${newWeight}${inventoryItem.weightUnit} (+${transactionWeight})`);
+        } else if (transactionType === 'sell') {
+          // Check if we have enough quantity
+          if (inventoryItem.quantity < transactionQuantity) {
             toast.error(`Not enough quantity in inventory for ${inventoryItem.name}`);
+            return;
           }
+          
+          // Check if we have enough weight (with a small tolerance)
+          const TOLERANCE = 0.001; // Small tolerance for floating point comparisons
+          if (inventoryItem.weight < (transactionWeight - TOLERANCE)) {
+            toast.error(`Not enough weight in inventory for ${inventoryItem.name}`);
+            return;
+          }
+          
+          // Removing from inventory (selling to customer)
+          newQuantity = inventoryItem.quantity - transactionQuantity;
+          newWeight = Math.max(0, inventoryItem.weight - transactionWeight);
+          
+          console.log(`- New Quantity: ${newQuantity} (-${transactionQuantity})`);
+          console.log(`- New Weight: ${newWeight}${inventoryItem.weightUnit} (-${transactionWeight})`);
         }
+        
+        // Recalculate 24K equivalent weight for updated inventory
+        const weightInGrams = convertToGrams(newWeight, inventoryItem.weightUnit);
+        const purityFactor = getPurityFactor(inventoryItem.purity);
+        const newEquivalent24k = weightInGrams * purityFactor;
+        
+        console.log(`- New 24K Equivalent: ${newEquivalent24k}g`);
+        
+        // Update inventory item with new values
+        updateInventoryItem(inventoryItem.id, { 
+          quantity: newQuantity,
+          weight: newWeight,
+          equivalent24k: newEquivalent24k
+        });
       });
     }
     
+    // Add the transaction to the state
     setTransactions(prev => [...prev, newTransaction]);
     toast.success(`Transaction ${transaction.type?.toLowerCase() === "buy" ? "purchase" : "sale"} recorded`);
   };
@@ -102,24 +137,46 @@ export const createTransactionService = (
     // Revert inventory changes
     const item = inventory.find(i => i.id === transaction.itemId);
     if (item) {
+      // We need to revert the inventory changes by doing the opposite operation
+      // If the transaction was a buy, we need to remove from inventory (as if selling)
+      // If the transaction was a sell, we need to add to inventory (as if buying)
+      const reverseType = transaction.type === 'buy' ? 'sell' : 'buy';
+      
       // Calculate weight per unit for proportional weight adjustment
-      const weightPerUnit = item.weight / item.quantity;
+      const weightPerUnit = item.quantity > 0 ? item.weight / item.quantity : 0;
       // Calculate total weight being transacted
       const totalWeightChange = transaction.quantity * weightPerUnit;
       
-      if (transaction.type === "buy") {
-        // Remove from inventory what was added
-        updateInventoryItem(item.id, { 
-          quantity: Math.max(0, item.quantity - transaction.quantity),
-          weight: Math.max(0, item.weight - totalWeightChange)
-        });
-      } else if (transaction.type === "sell") {
-        // Add back to inventory what was sold
-        updateInventoryItem(item.id, { 
-          quantity: item.quantity + transaction.quantity,
-          weight: item.weight + totalWeightChange
-        });
+      // Calculate new weight and quantity
+      let newQuantity = item.quantity;
+      let newWeight = item.weight;
+      
+      if (reverseType === 'buy') {
+        // Add back to inventory (undo sell)
+        newQuantity = item.quantity + transaction.quantity;
+        newWeight = item.weight + totalWeightChange;
+      } else {
+        // Remove from inventory (undo buy)
+        newQuantity = Math.max(0, item.quantity - transaction.quantity);
+        newWeight = Math.max(0, item.weight - totalWeightChange);
       }
+      
+      // Recalculate 24K equivalent
+      const weightInGrams = convertToGrams(newWeight, item.weightUnit);
+      const purityFactor = getPurityFactor(item.purity);
+      const newEquivalent24k = weightInGrams * purityFactor;
+      
+      // Update inventory
+      updateInventoryItem(item.id, { 
+        quantity: newQuantity,
+        weight: newWeight,
+        equivalent24k: newEquivalent24k
+      });
+      
+      console.log(`Reverted inventory for ${item.name}:`);
+      console.log(`- New Quantity: ${newQuantity}`);
+      console.log(`- New Weight: ${newWeight}${item.weightUnit}`);
+      console.log(`- New 24K Equivalent: ${newEquivalent24k}g`);
     }
     
     // Remove the transaction
@@ -127,10 +184,34 @@ export const createTransactionService = (
     toast.success("Transaction removed and inventory adjusted");
   };
 
+  // Helper function to dynamically calculate transaction price during form entry
+  const calculatePrice = (
+    type: 'buy' | 'sell',
+    category: 'bars' | 'coins' | 'jewelry',
+    spotPrice: number,
+    weight: number,
+    weightUnit: 'g' | 'oz' | 'tola' | 'baht' | 'kg',
+    purity: "999.9" | "995" | "22K" | "21K" | "18K" | "14K" | "9K",
+    commissionRate: number,
+    commissionType: 'percentage' | 'flat' | 'per_gram'
+  ) => {
+    return calculateTransactionPrice(
+      type,
+      category as 'bars' | 'coins' | 'jewelry',
+      spotPrice,
+      weight,
+      weightUnit as 'g' | 'oz' | 'tola' | 'baht',
+      purity,
+      commissionRate,
+      commissionType
+    );
+  };
+
   return {
     addTransaction,
     updateTransaction,
-    removeTransaction
+    removeTransaction,
+    calculatePrice
   };
 };
 

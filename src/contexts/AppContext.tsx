@@ -5,6 +5,7 @@ import { createInventoryService, calculateEquivalent24k } from './inventoryServi
 import { createTransactionService } from './transactionService';
 import { createFinancialService } from './financialService';
 import { toast } from "sonner";
+import { calculateTransactionPrice } from "@/utils/goldCalculations";
 
 // Main app context type
 interface AppContextType {
@@ -21,6 +22,16 @@ interface AppContextType {
   addTransaction: (transaction: Omit<Transaction, "id" | "dateTime">) => void;
   updateTransaction: (id: string, updates: Partial<Transaction>) => void;
   removeTransaction: (id: string) => void;
+  calculatePrice: (
+    type: 'buy' | 'sell',
+    category: string,
+    spotPrice: number,
+    weight: number,
+    weightUnit: 'g' | 'oz' | 'tola' | 'baht' | 'kg',
+    purity: "999.9" | "995" | "22K" | "21K" | "18K" | "14K" | "9K",
+    commissionRate: number,
+    commissionType: 'percentage' | 'flat' | 'per_gram'
+  ) => number;
   
   // Financial actions
   updateSpotPrice: (price: number) => void;
@@ -96,6 +107,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [inventory, transactions, financial, isLoading]);
   
+  // Wrapper for calculatePrice that safely handles category param
+  const calculatePrice = (
+    type: 'buy' | 'sell',
+    category: string,
+    spotPrice: number,
+    weight: number,
+    weightUnit: 'g' | 'oz' | 'tola' | 'baht' | 'kg',
+    purity: "999.9" | "995" | "22K" | "21K" | "18K" | "14K" | "9K",
+    commissionRate: number,
+    commissionType: 'percentage' | 'flat' | 'per_gram'
+  ) => {
+    // Normalize category to match expected values
+    let normalizedCategory: 'bars' | 'coins' | 'jewelry';
+    
+    if (category.toLowerCase().includes('bar')) {
+      normalizedCategory = 'bars';
+    } else if (category.toLowerCase().includes('coin')) {
+      normalizedCategory = 'coins';
+    } else {
+      normalizedCategory = 'jewelry';
+    }
+    
+    return calculateTransactionPrice(
+      type,
+      normalizedCategory,
+      spotPrice,
+      weight,
+      weightUnit as any,
+      purity,
+      commissionRate,
+      commissionType as any
+    );
+  };
+  
   return (
     <AppContext.Provider
       value={{
@@ -104,6 +149,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         financial,
         ...inventoryService,
         ...transactionService,
+        calculatePrice,
         ...financialService,
         isLoading,
         calculateEquivalent24k
