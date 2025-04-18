@@ -1,6 +1,7 @@
 
 import { useApp } from '@/contexts/AppContext';
 import { InventoryItem } from '@/contexts/types';
+import { toast } from 'sonner';
 
 export const useFeaturedItems = () => {
   const { inventory, financial, toggleItemFeature } = useApp();
@@ -13,9 +14,14 @@ export const useFeaturedItems = () => {
     return (financial.featuredItems || []).includes(itemId);
   };
 
+  const toggleFeature = (itemId: string, featured: boolean) => {
+    toggleItemFeature(itemId, featured);
+    toast.success(featured ? 'Item added to featured' : 'Item removed from featured');
+  };
+
   return {
     featuredItems,
-    toggleFeature: toggleItemFeature,
+    toggleFeature,
     isFeatured,
   };
 };
