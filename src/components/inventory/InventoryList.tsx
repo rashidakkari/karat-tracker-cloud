@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { InventoryItem, RegisterType, GoldPurity } from '@/models/inventory';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { convertTo24K } from '@/utils/goldCalculations';
-import { Search, Filter, PlusCircle, Trash2, Edit, Eye } from 'lucide-react';
+import { Search, Filter, PlusCircle, Trash2, Edit, Eye, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
   AlertDialog,
@@ -20,6 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
+import { useFeaturedItems } from '@/hooks/useFeaturedItems';
 
 interface InventoryListProps {
   registerType: RegisterType;
@@ -42,16 +42,16 @@ const InventoryList: React.FC<InventoryListProps> = ({
   const [filter, setFilter] = useState<string>('all');
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
+  const { isFeatured, toggleFeature } = useFeaturedItems();
+
   console.log(`${registerType} Inventory Items:`, items);
 
   const filteredItems = items.filter(item => {
-    // Apply search term filter
     const matchesSearch = 
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.barcode?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
       item.id.toLowerCase().includes(searchTerm.toLowerCase());
       
-    // Apply category filter
     const matchesFilter = filter === 'all' || 
       (item.category && item.category.toLowerCase() === filter.toLowerCase());
     

@@ -50,7 +50,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const DebtForm: React.FC<DebtFormProps> = ({ type, onClose }) => {
-  const { addDebt } = useApp();
+  const { addDebtRecord } = useApp();
   const [includeGold, setIncludeGold] = useState(false);
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
 
@@ -72,22 +72,18 @@ const DebtForm: React.FC<DebtFormProps> = ({ type, onClose }) => {
 
   const onSubmit = (data: FormValues) => {
     try {
-      // Create a debt object with the form data
-      const debtData = {
-        personName: data.personName,
-        contactInfo: data.contactInfo,
-        amount: data.amount,
-        currency: data.currency,
-        description: data.description,
-        type: type,
-        dueDate: dueDate ? dueDate.toISOString() : undefined,
-        goldAmount: data.includeGold ? data.goldAmount : undefined,
-        goldPurity: data.includeGold ? data.goldPurity : undefined,
-        goldWeightUnit: data.includeGold ? data.goldWeightUnit : undefined
-      };
-      
-      // Call addDebt with the debt object
-      addDebt(debtData);
+      addDebtRecord(
+        data.personName,
+        data.contactInfo,
+        data.amount,
+        data.currency,
+        data.description,
+        type,
+        dueDate?.toISOString(),
+        data.includeGold ? data.goldAmount : undefined,
+        data.includeGold ? data.goldPurity : undefined,
+        data.includeGold ? data.goldWeightUnit : undefined
+      );
       
       toast.success(`${type === 'customer' ? 'Customer' : 'Borrowed'} debt recorded successfully`);
       onClose();
