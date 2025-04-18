@@ -96,6 +96,7 @@ export interface FinancialData {
   customerDebts?: Debt[];
   borrowedDebts?: Debt[];
   registerCashEntries?: RegisterCashEntry[];
+  featuredItems?: string[]; // Array of featured item IDs
 }
 
 // Storage keys
@@ -116,7 +117,8 @@ export const DEFAULT_FINANCIAL: FinancialData = {
   retailBalance: { USD: 0, EUR: 0, GBP: 0, CHF: 0 },
   customerDebts: [],
   borrowedDebts: [],
-  registerCashEntries: []
+  registerCashEntries: [],
+  featuredItems: [] // Initialize empty array for featured items
 };
 
 // Helper function to generate a unique ID

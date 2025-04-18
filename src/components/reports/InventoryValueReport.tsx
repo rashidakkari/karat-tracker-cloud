@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency, formatWeight } from "@/utils/formatters";
 import { getPurityValue, getPurityDisplay } from "@/utils/debtUtils";
 import { convertToGrams } from "@/utils/goldCalculations";
-import { FilePdf, Printer, RefreshCw } from 'lucide-react';
+import { FileDown, Printer, RefreshCw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import html2pdf from 'html2pdf.js';
 
@@ -123,7 +122,7 @@ const InventoryValueReport: React.FC = () => {
             className="bg-amber-500 hover:bg-amber-600 text-white flex gap-2"
             disabled={isGenerating}
           >
-            <FilePdf size={16} />
+            <FileDown size={16} />
             <span>{isGenerating ? 'Generating...' : 'Export PDF'}</span>
           </Button>
         </div>

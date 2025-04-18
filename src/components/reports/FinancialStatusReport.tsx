@@ -1,11 +1,10 @@
-
 import React, { useState, useRef } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatWeight } from "@/utils/formatters";
-import { FilePdf, Printer, RefreshCw } from 'lucide-react';
+import { FileDown, Printer, RefreshCw } from 'lucide-react';
 import { calculateTotalDebtAmount, calculateTotalGoldDebtAmount } from '@/utils/debtUtils';
 import html2pdf from 'html2pdf.js';
 import { convertToGrams, getPurityFactor } from '@/utils/goldCalculations';
@@ -15,50 +14,38 @@ const FinancialStatusReport: React.FC = () => {
   const reportRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   
-  // Calculate the total value of inventory in USD
   const calculateTotalInventoryValue = () => {
     const spotPrice = financial.spotPrice; // USD per troy ounce
     const spotPricePerGram = spotPrice / 31.1035; // Convert to USD per gram
     
     return inventory.reduce((total, item) => {
-      // Convert weight to grams for consistent calculation
       const weightInGrams = convertToGrams(item.weight, item.weightUnit);
-      
-      // Get purity as a decimal
       const purityFactor = getPurityFactor(item.purity);
-      
-      // Calculate pure gold content
       const pureGoldContent = weightInGrams * purityFactor;
-      
-      // Calculate value in USD and multiply by quantity
       const valueUSD = pureGoldContent * spotPricePerGram * item.quantity;
       
       return total + valueUSD;
     }, 0);
   };
   
-  // Calculate register balances
   const calculateTotalRegisterBalance = () => {
     const wholesaleUSD = financial.wholesaleBalance?.USD || 0;
     const retailUSD = financial.retailBalance?.USD || 0;
     return wholesaleUSD + retailUSD;
   };
   
-  // Calculate customer debts (money owed to us)
   const customerDebtAmount = calculateTotalDebtAmount(
     financial.customerDebts || [], 
     'customer', 
     undefined
   );
   
-  // Calculate borrowed debts (money we owe)
   const borrowedDebtAmount = calculateTotalDebtAmount(
     financial.borrowedDebts || [], 
     'borrowed', 
     undefined
   );
   
-  // Calculate gold debts
   const customerGoldDebtAmount = calculateTotalGoldDebtAmount(
     financial.customerDebts || [],
     'customer',
@@ -71,14 +58,12 @@ const FinancialStatusReport: React.FC = () => {
     undefined
   );
   
-  // Calculate total assets and liabilities
   const totalInventoryValue = calculateTotalInventoryValue();
   const totalRegisterBalance = calculateTotalRegisterBalance();
   const totalAssets = totalInventoryValue + totalRegisterBalance + customerDebtAmount;
   const totalLiabilities = borrowedDebtAmount;
   const netWorth = totalAssets - totalLiabilities;
   
-  // Export the report as PDF
   const exportToPdf = async () => {
     if (!reportRef.current) return;
     
@@ -102,7 +87,6 @@ const FinancialStatusReport: React.FC = () => {
     }
   };
 
-  // Print the report
   const printReport = () => {
     window.print();
   };
@@ -125,7 +109,7 @@ const FinancialStatusReport: React.FC = () => {
             className="bg-amber-500 hover:bg-amber-600 text-white flex gap-2"
             disabled={isGenerating}
           >
-            <FilePdf size={16} />
+            <FileDown size={16} />
             <span>{isGenerating ? 'Generating...' : 'Export PDF'}</span>
           </Button>
         </div>
