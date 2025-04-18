@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
+import { DatePicker } from '@/components/ui/date-picker';
 
 interface DebtFormProps {
   type: 'customer' | 'borrowed';
@@ -51,6 +52,7 @@ type FormValues = z.infer<typeof formSchema>;
 const DebtForm: React.FC<DebtFormProps> = ({ type, onClose }) => {
   const { addDebt } = useApp();
   const [includeGold, setIncludeGold] = useState(false);
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -70,18 +72,22 @@ const DebtForm: React.FC<DebtFormProps> = ({ type, onClose }) => {
 
   const onSubmit = (data: FormValues) => {
     try {
-      addDebt(
-        data.personName,
-        data.contactInfo,
-        data.amount,
-        data.currency,
-        data.description,
-        type,
-        data.dueDate,
-        data.includeGold ? data.goldAmount : undefined,
-        data.includeGold ? data.goldPurity : undefined,
-        data.includeGold ? data.goldWeightUnit : undefined
-      );
+      // Create a debt object with the form data
+      const debtData = {
+        personName: data.personName,
+        contactInfo: data.contactInfo,
+        amount: data.amount,
+        currency: data.currency,
+        description: data.description,
+        type: type,
+        dueDate: dueDate ? dueDate.toISOString() : undefined,
+        goldAmount: data.includeGold ? data.goldAmount : undefined,
+        goldPurity: data.includeGold ? data.goldPurity : undefined,
+        goldWeightUnit: data.includeGold ? data.goldWeightUnit : undefined
+      };
+      
+      // Call addDebt with the debt object
+      addDebt(debtData);
       
       toast.success(`${type === 'customer' ? 'Customer' : 'Borrowed'} debt recorded successfully`);
       onClose();
@@ -254,20 +260,10 @@ const DebtForm: React.FC<DebtFormProps> = ({ type, onClose }) => {
           </div>
         )}
         
-        <FormField
-          control={form.control}
-          name="dueDate"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Due Date (Optional)</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} />
-              </FormControl>
-              <FormDescription>When this debt is expected to be paid</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="space-y-2">
+          <Label>Due Date (Optional)</Label>
+          <DatePicker date={dueDate} setDate={setDueDate} />
+        </div>
         
         <FormField
           control={form.control}

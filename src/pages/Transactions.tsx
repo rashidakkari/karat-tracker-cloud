@@ -5,7 +5,7 @@ import TransactionList from "@/components/transactions/TransactionList";
 import { Button } from "@/components/ui/button";
 import TransactionForm from "@/components/transactions/TransactionForm";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { PlusIcon, Search, Filter, FileText } from "lucide-react";
+import { PlusIcon, Search, Filter, RefreshCcw } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Transaction as ModelTransaction } from "@/models/transactions";
 import { InventoryItem as ModelInventoryItem, ItemCategory } from "@/models/inventory";
@@ -46,7 +46,7 @@ const Transactions = () => {
     let registerFiltered = mappedTransactions;
     if (activeTab !== "all") {
       registerFiltered = mappedTransactions.filter(t => 
-        t.registerType.toLowerCase() === activeTab.toLowerCase()
+        t.registerType?.toLowerCase() === activeTab.toLowerCase()
       );
     }
     
@@ -78,7 +78,6 @@ const Transactions = () => {
   const handleViewTransaction = (transaction: ModelTransaction) => {
     console.log("Viewing transaction details:", transaction);
     toast.info(`Viewing details for transaction: ${transaction.id.substring(0, 8)}`);
-    // In a full implementation, this might open a detailed view dialog
   };
   
   // Function to edit a transaction
@@ -91,7 +90,6 @@ const Transactions = () => {
   // Function to print a receipt
   const handlePrintReceipt = (transaction: ModelTransaction) => {
     console.log("Print receipt for transaction:", transaction);
-    // Actual printing is now handled in the TransactionList component
   };
 
   // Function to save transaction (new or edited)
@@ -126,7 +124,6 @@ const Transactions = () => {
       weightUnit: item.weightUnit === "kg" ? "g" : item.weightUnit as "g" | "oz" | "tola" | "baht", 
       purity: item.purity,
       quantity: item.quantity,
-      // The costPrice field in the model is required
       costPrice: item.costPrice || 0,
       sellingPrice: 0,
       equivalent24k: item.equivalent24k || 0,
@@ -179,144 +176,82 @@ const Transactions = () => {
           </Dialog>
         </div>
 
-        {/* Transaction Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <Card className={`${activeTab === 'all' ? 'border-2 border-amber-500' : ''}`}>
-            <CardHeader className="py-2">
-              <CardTitle className="text-sm font-medium flex justify-between items-center">
-                All Transactions
-                <span className="text-xl font-bold">{transactionCounts.all}</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="py-2">
-              <Button 
-                variant={activeTab === 'all' ? "default" : "outline"} 
-                size="sm" 
-                className="w-full"
-                onClick={() => setActiveTab('all')}
-              >
-                View All
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Card className={`${activeTab === 'wholesale' ? 'border-2 border-amber-500' : ''}`}>
-            <CardHeader className="py-2">
-              <CardTitle className="text-sm font-medium flex justify-between items-center">
-                Wholesale
-                <span className="text-xl font-bold">{transactionCounts.wholesale}</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="py-2">
-              <Button 
-                variant={activeTab === 'wholesale' ? "default" : "outline"} 
-                size="sm" 
-                className="w-full"
-                onClick={() => setActiveTab('wholesale')}
-              >
-                Wholesale Only
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Card className={`${activeTab === 'retail' ? 'border-2 border-amber-500' : ''}`}>
-            <CardHeader className="py-2">
-              <CardTitle className="text-sm font-medium flex justify-between items-center">
-                Retail
-                <span className="text-xl font-bold">{transactionCounts.retail}</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="py-2">
-              <Button 
-                variant={activeTab === 'retail' ? "default" : "outline"} 
-                size="sm" 
-                className="w-full"
-                onClick={() => setActiveTab('retail')}
-              >
-                Retail Only
-              </Button>
-            </CardContent>
-          </Card>
-          
+        {/* Filtering and view control */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {/* Register Type Filter */}
           <Card>
-            <CardHeader className="py-2">
-              <CardTitle className="text-sm font-medium flex justify-between items-center">
-                Buy Transactions
-                <span className="text-xl font-bold">{transactionCounts.buy}</span>
-              </CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Register Type</CardTitle>
             </CardHeader>
-            <CardContent className="py-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full"
-                onClick={() => setFilterType('buy')}
-              >
-                Filter Buy
-              </Button>
+            <CardContent className="pt-0">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid grid-cols-3 w-full">
+                  <TabsTrigger value="all">
+                    All ({transactionCounts.all})
+                  </TabsTrigger>
+                  <TabsTrigger value="wholesale">
+                    Wholesale ({transactionCounts.wholesale})
+                  </TabsTrigger>
+                  <TabsTrigger value="retail">
+                    Retail ({transactionCounts.retail})
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </CardContent>
           </Card>
           
+          {/* Transaction Type Filter */}
           <Card>
-            <CardHeader className="py-2">
-              <CardTitle className="text-sm font-medium flex justify-between items-center">
-                Sell Transactions
-                <span className="text-xl font-bold">{transactionCounts.sell}</span>
-              </CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Transaction Type</CardTitle>
             </CardHeader>
-            <CardContent className="py-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full"
-                onClick={() => setFilterType('sell')}
-              >
-                Filter Sell
-              </Button>
+            <CardContent className="pt-0">
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger>
+                  <span className="flex items-center">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <span>{filterType === 'all' ? 'All Types' : filterType === 'buy' ? 'Buy' : 'Sell'}</span>
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types ({transactionCounts.all})</SelectItem>
+                  <SelectItem value="buy">Buy Transactions ({transactionCounts.buy})</SelectItem>
+                  <SelectItem value="sell">Sell Transactions ({transactionCounts.sell})</SelectItem>
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+          
+          {/* Search */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Search Transactions</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="relative">
+                <Input
+                  placeholder="Search by name, ID, or type..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+                <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                {searchQuery && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2" 
+                    onClick={() => setSearchQuery('')}
+                  >
+                    <RefreshCcw className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Enhanced Search and Filter */}
-        <div className="mb-4 flex space-x-2">
-          <div className="relative flex-1">
-            <Input
-              placeholder="Search transactions by customer name, ID, or type..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-            <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-          </div>
-          
-          <div className="w-[200px]">
-            <Select
-              value={filterType}
-              onValueChange={setFilterType}
-            >
-              <SelectTrigger className="w-full">
-                <span className="flex items-center">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <span>{filterType === 'all' ? 'All Types' : filterType}</span>
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="buy">Buy Transactions</SelectItem>
-                <SelectItem value="sell">Sell Transactions</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <Button variant="outline" onClick={() => {
-            setSearchQuery('');
-            setFilterType('all');
-            setActiveTab('all');
-          }}>
-            Clear Filters
-          </Button>
-        </div>
-
+        {/* Transaction List */}
         <TransactionList 
           transactions={filteredTransactions}
           onCreateTransaction={() => {
