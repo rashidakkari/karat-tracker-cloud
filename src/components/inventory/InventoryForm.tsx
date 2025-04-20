@@ -1,16 +1,16 @@
 
 import React, { useState } from 'react';
-import { InventoryItem, ItemCategory, GoldPurity } from '@/models/inventory';
-import { WeightUnit } from '@/utils/goldCalculations';
+import { InventoryItem, ItemCategory, GoldPurity, WeightUnit } from '@/models/inventory';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import { Save } from 'lucide-react';
+import BasicInfoSection from './form-sections/BasicInfoSection';
+import WeightSection from './form-sections/WeightSection';
+import QuantitySection from './form-sections/QuantitySection';
+import OptionalSection from './form-sections/OptionalSection';
+import { Currency } from '@/contexts/types';
 
 interface InventoryFormProps {
   item?: InventoryItem;
@@ -48,7 +48,6 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate the form
     if (!formData.name || formData.name.trim() === '') {
       toast.error('Item name is required');
       return;
@@ -69,7 +68,6 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
       return;
     }
     
-    // Save the inventory item
     onSave(formData as InventoryItem);
   };
 
@@ -82,164 +80,39 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
       </CardHeader>
       <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
         <CardContent className="space-y-4 p-4 overflow-y-auto flex-1">
-          {/* Essential Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Item Name*</Label>
-              <Input
-                id="name"
-                value={formData.name || ''}
-                onChange={(e) => handleChange('name', e.target.value)}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="category">Category*</Label>
-              <Select
-                value={formData.category as string}
-                onValueChange={(value) => handleChange('category', value as ItemCategory)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Bars">Bars</SelectItem>
-                  <SelectItem value="Coins">Coins</SelectItem>
-                  <SelectItem value="Jewelry">Jewelry</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <BasicInfoSection
+            name={formData.name || ''}
+            category={formData.category as string}
+            onNameChange={(value) => handleChange('name', value)}
+            onCategoryChange={(value) => handleChange('category', value)}
+          />
           
-          {/* Weight and Purity */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="weight">Weight*</Label>
-              <Input
-                id="weight"
-                type="number"
-                step="0.001"
-                min="0.001"
-                value={formData.weight || ''}
-                onChange={(e) => handleChange('weight', parseFloat(e.target.value))}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="weightUnit">Unit*</Label>
-              <Select
-                value={formData.weightUnit as string}
-                onValueChange={(value) => handleChange('weightUnit', value as WeightUnit)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select unit" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="g">Grams (g)</SelectItem>
-                  <SelectItem value="oz">Troy Ounces (oz)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="purity">Purity*</Label>
-              <Select
-                value={formData.purity as string}
-                onValueChange={(value) => handleChange('purity', value as GoldPurity)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select purity" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="999.9">999.9</SelectItem>
-                  <SelectItem value="995">995</SelectItem>
-                  <SelectItem value="22K">22K</SelectItem>
-                  <SelectItem value="21K">21K</SelectItem>
-                  <SelectItem value="18K">18K</SelectItem>
-                  <SelectItem value="14K">14K</SelectItem>
-                  <SelectItem value="9K">9K</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <WeightSection
+            weight={formData.weight || 0}
+            weightUnit={formData.weightUnit || 'g'}
+            purity={formData.purity || '995'}
+            onWeightChange={(value) => handleChange('weight', value)}
+            onWeightUnitChange={(value) => handleChange('weightUnit', value)}
+            onPurityChange={(value) => handleChange('purity', value)}
+          />
           
-          {/* Quantity and Cost */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity*</Label>
-              <Input
-                id="quantity"
-                type="number"
-                min="1"
-                value={formData.quantity || 1}
-                onChange={(e) => handleChange('quantity', parseInt(e.target.value))}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="costPrice">Cost Price</Label>
-              <Input
-                id="costPrice"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.costPrice || ''}
-                onChange={(e) => handleChange('costPrice', parseFloat(e.target.value))}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="costCurrency">Currency</Label>
-              <Select
-                value={formData.costCurrency as string}
-                onValueChange={(value) => handleChange('costCurrency', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select currency" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD">USD</SelectItem>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                  <SelectItem value="GBP">GBP</SelectItem>
-                  <SelectItem value="CHF">CHF</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <QuantitySection
+            quantity={formData.quantity || 1}
+            costPrice={formData.costPrice || 0}
+            costCurrency={formData.costCurrency || 'USD'}
+            onQuantityChange={(value) => handleChange('quantity', value)}
+            onCostPriceChange={(value) => handleChange('costPrice', value)}
+            onCostCurrencyChange={(value) => handleChange('costCurrency', value)}
+          />
           
-          {/* Optional Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="location">Storage Location</Label>
-              <Input
-                id="location"
-                value={formData.location || ''}
-                onChange={(e) => handleChange('location', e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="supplier">Supplier</Label>
-              <Input
-                id="supplier"
-                value={formData.supplier || ''}
-                onChange={(e) => handleChange('supplier', e.target.value)}
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes || ''}
-              onChange={(e) => handleChange('notes', e.target.value)}
-              className="min-h-20"
-            />
-          </div>
+          <OptionalSection
+            location={formData.location || ''}
+            supplier={formData.supplier || ''}
+            notes={formData.notes || ''}
+            onLocationChange={(value) => handleChange('location', value)}
+            onSupplierChange={(value) => handleChange('supplier', value)}
+            onNotesChange={(value) => handleChange('notes', value)}
+          />
         </CardContent>
         
         <CardFooter className="flex justify-between bg-muted/30 border-t p-4 sticky bottom-0 z-10">
