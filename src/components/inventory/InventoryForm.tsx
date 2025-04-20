@@ -30,6 +30,7 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
       quantity: 1,
       costPrice: 0,
       costCurrency: 'USD',
+      tags: [],
       createdAt: new Date(),
       updatedAt: new Date()
     }
@@ -82,9 +83,9 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
         <CardContent className="space-y-4 p-4 overflow-y-auto flex-1">
           <BasicInfoSection
             name={formData.name || ''}
-            category={formData.category as string}
+            category={formData.category as ItemCategory}
             onNameChange={(value) => handleChange('name', value)}
-            onCategoryChange={(value) => handleChange('category', value)}
+            onCategoryChange={(value) => handleChange('category', value as ItemCategory)}
           />
           
           <WeightSection
@@ -109,9 +110,11 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ item, onSave, onCancel })
             location={formData.location || ''}
             supplier={formData.supplier || ''}
             notes={formData.notes || ''}
+            tags={formData.tags || []}
             onLocationChange={(value) => handleChange('location', value)}
             onSupplierChange={(value) => handleChange('supplier', value)}
             onNotesChange={(value) => handleChange('notes', value)}
+            onTagsChange={(value) => handleChange('tags', value)}
           />
         </CardContent>
         

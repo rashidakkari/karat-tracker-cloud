@@ -7,8 +7,8 @@ import { GoldPurity, WeightUnit } from "@/models/inventory";
 
 interface WeightSectionProps {
   weight: number;
-  weightUnit: string;
-  purity: string;
+  weightUnit: WeightUnit;
+  purity: GoldPurity;
   onWeightChange: (value: number) => void;
   onWeightUnitChange: (value: WeightUnit) => void;
   onPurityChange: (value: GoldPurity) => void;
@@ -49,6 +49,8 @@ const WeightSection = ({
           <SelectContent>
             <SelectItem value="g">Grams (g)</SelectItem>
             <SelectItem value="oz">Troy Ounces (oz)</SelectItem>
+            <SelectItem value="tola">Tola</SelectItem>
+            <SelectItem value="baht">Baht</SelectItem>
           </SelectContent>
         </Select>
       </div>
