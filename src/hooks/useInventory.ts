@@ -1,18 +1,24 @@
 
 import { useState } from 'react';
 import { InventoryItem } from '@/models/inventory';
-import { calculateEquivalent24k } from '@/utils/goldCalculations';
+import { convertToGrams, getPurityFactor } from '@/utils/goldCalculations';
 import { toast } from 'sonner';
 
 export const useInventory = () => {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+
+  // Calculate 24K equivalent based on weight and purity
+  const calculate24kEquivalent = (weight: number, purity: InventoryItem["purity"]): number => {
+    const weightInGrams = convertToGrams(weight, "g");
+    return weightInGrams * getPurityFactor(purity);
+  };
 
   const addInventoryItem = (item: Omit<InventoryItem, "id" | "dateAcquired" | "equivalent24k">) => {
     const newItem: InventoryItem = {
       ...item,
       id: generateId(),
       dateAcquired: new Date().toISOString(),
-      equivalent24k: calculateEquivalent24k(item.weight, item.purity),
+      equivalent24k: calculate24kEquivalent(item.weight, item.purity),
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -29,7 +35,7 @@ export const useInventory = () => {
             ...updates, 
             updatedAt: new Date(),
             equivalent24k: updates.weight || updates.purity 
-              ? calculateEquivalent24k(
+              ? calculate24kEquivalent(
                   updates.weight || item.weight,
                   updates.purity || item.purity
                 )
