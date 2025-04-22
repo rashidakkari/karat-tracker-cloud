@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Star } from 'lucide-react';
 
 const FeaturedItems = () => {
-  const { featuredItems, toggleItemFeature, inventory, isFeatured } = useApp();
+  const { featuredItems, toggleItemFeature, inventory } = useApp();
 
   // Get featured inventory items
   const featuredInventoryItems = React.useMemo(() => {
     return inventory.filter(item => featuredItems.includes(item.id));
   }, [inventory, featuredItems]);
 
+  // Empty state when no featured items exist
   if (featuredInventoryItems.length === 0) {
     return (
       <Card>

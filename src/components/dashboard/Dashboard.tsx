@@ -30,8 +30,10 @@ const spotPriceHistory = [
 
 const Dashboard: React.FC = () => {
   const { inventory, financial, updateSpotPrice } = useApp();
-  // Initialize transactions to prevent the filter error
+  
+  // Initialize empty transactions array to prevent filter errors
   const transactions = [];
+  
   const [currency] = React.useState<Currency>("USD");
   const [registerFilter, setRegisterFilter] = useState<"all" | "wholesale" | "retail">("all");
   const [searchQuery, setSearchQuery] = useState("");

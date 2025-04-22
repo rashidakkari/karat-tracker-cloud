@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect } from "react";
 import { InventoryItem, Transaction, FinancialData, STORAGE_KEYS, Currency } from './types';
 import { useInventory } from '@/hooks/useInventory';
@@ -28,7 +29,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     updateFinancial,
   } = useFinancial();
 
-  // Local state for featured items (instead of useFeaturedItems)
+  // Local state for featured items
   const [featuredItems, setFeaturedItems] = React.useState<string[]>([]);
 
   // Toggle an inventory item's featured status
@@ -37,6 +38,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.includes(id) ? prev.filter((fid) => fid !== id) : [...prev, id]
     );
   };
+  
+  // Check if an item is featured
   const isFeatured = (id: string) => featuredItems.includes(id);
 
   // Load data from localStorage on mount
