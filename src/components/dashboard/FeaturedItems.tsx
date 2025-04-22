@@ -1,14 +1,19 @@
 
 import React from 'react';
-import { useFeaturedItems } from '@/hooks/useFeaturedItems';
+import { useApp } from '@/contexts/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Star } from 'lucide-react';
 
 const FeaturedItems = () => {
-  const { featuredItems, toggleFeature } = useFeaturedItems();
+  const { featuredItems, toggleItemFeature, inventory, isFeatured } = useApp();
 
-  if (featuredItems.length === 0) {
+  // Get featured inventory items
+  const featuredInventoryItems = React.useMemo(() => {
+    return inventory.filter(item => featuredItems.includes(item.id));
+  }, [inventory, featuredItems]);
+
+  if (featuredInventoryItems.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -32,7 +37,7 @@ const FeaturedItems = () => {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {featuredItems.map(item => (
+          {featuredInventoryItems.map(item => (
             <div key={item.id} className="p-4 border rounded-lg shadow-sm">
               <div className="flex justify-between items-start">
                 <div>
@@ -44,7 +49,7 @@ const FeaturedItems = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => toggleFeature(item.id, false)}
+                  onClick={() => toggleItemFeature(item.id)}
                 >
                   <Star className="h-4 w-4 fill-amber-500" />
                 </Button>

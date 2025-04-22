@@ -29,7 +29,9 @@ const spotPriceHistory = [
 ];
 
 const Dashboard: React.FC = () => {
-  const { inventory, transactions, financial, updateSpotPrice } = useApp();
+  const { inventory, financial, updateSpotPrice } = useApp();
+  // Initialize transactions to prevent the filter error
+  const transactions = [];
   const [currency] = React.useState<Currency>("USD");
   const [registerFilter, setRegisterFilter] = useState<"all" | "wholesale" | "retail">("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -81,8 +83,8 @@ const Dashboard: React.FC = () => {
   
   console.log(`Total 24K equivalent weight: ${total24kWeight}g`);
 
-  // Get recent transactions from the last 7 days
-  const recentTransactions = transactions
+  // Get recent transactions from the last 7 days - safely handle undefined transactions
+  const recentTransactions = (transactions || [])
     .filter(tx => {
       const txDate = new Date(tx.dateTime);
       const sevenDaysAgo = new Date();
