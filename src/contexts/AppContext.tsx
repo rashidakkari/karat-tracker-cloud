@@ -1,9 +1,7 @@
-
 import React, { createContext, useContext, useEffect } from "react";
 import { InventoryItem, Transaction, FinancialData, STORAGE_KEYS, Currency } from './types';
 import { useInventory } from '@/hooks/useInventory';
 import { useFinancial } from '@/hooks/useFinancial';
-import { useFeaturedItems } from '@/hooks/useFeaturedItems';
 import { calculateTransactionPrice } from "@/utils/goldCalculations";
 import { toast } from "sonner";
 
@@ -30,11 +28,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     updateFinancial,
   } = useFinancial();
 
-  const {
-    featuredItems,
-    toggleFeature: toggleItemFeature,
-    isFeatured,
-  } = useFeaturedItems();
+  // Local state for featured items (instead of useFeaturedItems)
+  const [featuredItems, setFeaturedItems] = React.useState<string[]>([]);
+
+  // Toggle an inventory item's featured status
+  const toggleItemFeature = (id: string) => {
+    setFeaturedItems((prev) => 
+      prev.includes(id) ? prev.filter((fid) => fid !== id) : [...prev, id]
+    );
+  };
+  const isFeatured = (id: string) => featuredItems.includes(id);
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -49,6 +52,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const parsedFinancial = JSON.parse(storedFinancial);
         setFinancial(parsedFinancial);
       }
+
+      const storedFeatured = localStorage.getItem("karatcloud_featuredItems");
+      if (storedFeatured) {
+        setFeaturedItems(JSON.parse(storedFeatured));
+      }
     } catch (error) {
       console.error("Error loading data from localStorage:", error);
       toast.error("Failed to load application data");
@@ -59,7 +67,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.inventory, JSON.stringify(inventory));
     localStorage.setItem(STORAGE_KEYS.financial, JSON.stringify(financial));
-  }, [inventory, financial]);
+    localStorage.setItem("karatcloud_featuredItems", JSON.stringify(featuredItems));
+  }, [inventory, financial, featuredItems]);
 
   // Wrapper for calculatePrice that safely handles category param
   const calculatePrice = (
@@ -73,13 +82,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     commissionType: 'percentage' | 'flat' | 'per_gram'
   ) => {
     let normalizedCategory: 'bars' | 'coins' | 'jewelry' = 'jewelry';
-    
     if (category.toLowerCase().includes('bar')) {
       normalizedCategory = 'bars';
     } else if (category.toLowerCase().includes('coin')) {
       normalizedCategory = 'coins';
     }
-    
     return calculateTransactionPrice(
       type,
       normalizedCategory,
