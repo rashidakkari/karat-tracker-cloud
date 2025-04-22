@@ -2,7 +2,6 @@
 import React from "react";
 import DashboardComponent from "@/components/dashboard/Dashboard";
 import AppLayout from "@/components/layout/AppLayout";
-import { useFeaturedItems } from "@/hooks/useFeaturedItems";
 import FeaturedItems from "@/components/dashboard/FeaturedItems";
 
 const Dashboard = () => {

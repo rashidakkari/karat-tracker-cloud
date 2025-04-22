@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Transaction, TransactionItem, Payment } from '@/models/transactions';
 import { InventoryItem } from '@/models/inventory';
@@ -9,7 +8,8 @@ import {
   calculateJewelrySellingPrice,
   GoldPurity,
   WeightUnit,
-  CurrencyCode
+  CurrencyCode,
+  getPurityFactor
 } from '@/utils/goldCalculations';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -85,7 +85,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   
   const isEditing = !!transaction;
 
-  // Filter inventory items based on the register type
   useEffect(() => {
     const registerType = formData.registerType?.toLowerCase() || 'wholesale';
     const filtered = inventoryItems.filter(item => 
@@ -94,7 +93,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     setFilteredItems(filtered);
   }, [formData.registerType, inventoryItems]);
 
-  // Calculate totals when items or payments change
   useEffect(() => {
     const totalAmount = selectedItems.reduce((sum, item) => sum + item.totalPrice, 0);
     const paidAmount = payments.reduce((sum, payment) => {
@@ -110,7 +108,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     }));
   }, [selectedItems, payments]);
 
-  // Handle barcode search
   const handleSearchByIdOrBarcode = () => {
     if (!searchText.trim()) {
       toast.error('Please enter an item ID or scan a barcode');
@@ -129,14 +126,12 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     }
   };
 
-  // Handle barcode scanner enter key
   const handleBarcodeScanned = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearchByIdOrBarcode();
     }
   };
 
-  // Handle search input change with filtering
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const searchValue = e.target.value;
     setSearchText(searchValue);
@@ -155,7 +150,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     }
   };
 
-  // Add item to transaction
   const addItem = () => {
     if (!selectedItemId) {
       toast.error('Please select an item');
@@ -173,7 +167,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       return;
     }
     
-    // Use manual weight if provided, otherwise use inventory item weight
     const itemWeight = manualWeight !== undefined ? manualWeight : inventoryItem.weight;
     
     if (itemWeight <= 0) {
@@ -186,18 +179,16 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     const purity = inventoryItem.purity as GoldPurity;
     
     if (customUnitPrice !== undefined && customUnitPrice > 0) {
-      // Use custom unit price if provided
       unitPrice = customUnitPrice;
     } else {
-      // Calculate price based on formula
       if (formData.type === 'Buy') {
         unitPrice = isBars 
           ? calculateBarBuyingPrice(currentSpotPrice, itemWeight, purity as '999.9' | '995')
-          : calculateJewelryBuyingPrice(currentSpotPrice, itemWeight, purity);
+          : calculateJewelryBuyingPrice(currentSpotPrice, itemWeight, purity, 0, getPurityFactor);
       } else {
         unitPrice = isBars
           ? calculateBarSellingPrice(currentSpotPrice, itemWeight, purity as '999.9' | '995', formData.commission || 0)
-          : calculateJewelrySellingPrice(currentSpotPrice, itemWeight, purity, formData.commission || 0);
+          : calculateJewelrySellingPrice(currentSpotPrice, itemWeight, purity, formData.commission || 0, getPurityFactor);
       }
     }
     
@@ -210,7 +201,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       name: inventoryItem.name,
       category: inventoryItem.category,
       purity: inventoryItem.purity,
-      weight: itemWeight, // Use the potentially modified weight
+      weight: itemWeight,
       weightUnit: inventoryItem.weightUnit,
       quantity: quantity,
       unitPrice: unitPrice,
@@ -220,7 +211,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       currency: formData.currency as string
     };
     
-    // Check if the item can be added based on inventory availability
     if (formData.type === 'Sell') {
       if (inventoryItem.quantity < quantity) {
         toast.error(`Not enough quantity available. Only ${inventoryItem.quantity} in stock.`);
@@ -236,12 +226,10 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     setSearchText('');
   };
 
-  // Remove item from transaction
   const removeItem = (id: string) => {
     setSelectedItems(selectedItems.filter(item => item.id !== id));
   };
 
-  // Add payment method
   const addPayment = () => {
     const newPayment: Payment = {
       method: 'Cash',
@@ -252,7 +240,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     setPayments([...payments, newPayment]);
   };
 
-  // Update payment details
   const updatePayment = (index: number, field: keyof Payment, value: any) => {
     const updatedPayments = [...payments];
     updatedPayments[index] = {
@@ -263,12 +250,10 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     setPayments(updatedPayments);
   };
 
-  // Remove payment
   const removePayment = (index: number) => {
     setPayments(payments.filter((_, i) => i !== index));
   };
 
-  // Update form data for a specific field
   const handleChange = (field: keyof Transaction, value: any) => {
     setFormData({
       ...formData,
@@ -277,7 +262,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     });
   };
 
-  // Add full payment amount
   const handleAddFullPayment = () => {
     const totalAmount = formData.totalAmount || 0;
     
@@ -286,9 +270,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       return;
     }
     
-    // Check if we already have a payment
     if (payments.length > 0) {
-      // Update first payment to full amount
       const updatedPayments = [...payments];
       updatedPayments[0] = {
         ...updatedPayments[0],
@@ -298,7 +280,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       };
       setPayments(updatedPayments);
     } else {
-      // Create new payment with full amount
       const newPayment: Payment = {
         method: 'Cash',
         amount: totalAmount,
@@ -308,7 +289,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     }
   };
 
-  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -322,12 +302,10 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       return;
     }
     
-    // Determine if there's an unpaid amount that should create a debt
     const totalAmount = formData.totalAmount || 0;
     const paidAmount = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
     const hasUnpaidAmount = paidAmount < totalAmount;
     
-    // If there's an unpaid amount and createDebt is not checked, show warning
     if (hasUnpaidAmount && !createDebt) {
       toast.warning('Transaction has unpaid amount. Please check "Create Debt" to continue or add full payment.');
       return;
@@ -343,14 +321,12 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     onSave(finalTransaction);
   };
 
-  // Focus barcode input field
   const focusBarcodeInput = () => {
     if (barcodeInputRef.current) {
       barcodeInputRef.current.focus();
     }
   };
 
-  // Auto-calculate price when relevant fields change
   const handleCalculatePrice = () => {
     if (!selectedItemId) {
       toast.error('Please select an item first');
@@ -368,11 +344,11 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     if (formData.type === 'Buy') {
       calculatedPrice = isBars 
         ? calculateBarBuyingPrice(currentSpotPrice, itemWeight, purity as '999.9' | '995') 
-        : calculateJewelryBuyingPrice(currentSpotPrice, itemWeight, purity);
+        : calculateJewelryBuyingPrice(currentSpotPrice, itemWeight, purity, 0, getPurityFactor);
     } else {
       calculatedPrice = isBars
         ? calculateBarSellingPrice(currentSpotPrice, itemWeight, purity as '999.9' | '995', formData.commission || 0)
-        : calculateJewelrySellingPrice(currentSpotPrice, itemWeight, purity, formData.commission || 0);
+        : calculateJewelrySellingPrice(currentSpotPrice, itemWeight, purity, formData.commission || 0, getPurityFactor);
     }
     
     setCustomUnitPrice(calculatedPrice);
@@ -393,7 +369,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
         <CardContent className="space-y-4 p-4 overflow-y-auto flex-1">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Transaction Type and Register Type */}
             <div className="flex space-x-2">
               <div className="space-y-2 flex-1">
                 <Label htmlFor="type">Transaction Type*</Label>
@@ -428,7 +403,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
               </div>
             </div>
             
-            {/* Customer Information */}
             <div className="flex space-x-2">
               <div className="space-y-2 flex-1">
                 <Label htmlFor="customerName">Customer Name*</Label>
@@ -451,7 +425,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
             </div>
           </div>
           
-          {/* Currency, Spot Price, and Commission Section */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="currency">Currency*</Label>
@@ -512,16 +485,13 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
             </div>
           </div>
           
-          {/* Transaction Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-2">
               <TabsTrigger value="items">Items</TabsTrigger>
               <TabsTrigger value="payments">Payments</TabsTrigger>
             </TabsList>
             
-            {/* Items Tab */}
             <TabsContent value="items" className="space-y-4 pt-4">
-              {/* Item Search */}
               <div className="flex space-x-2 p-3 border rounded-md bg-secondary/10">
                 <div className="flex-1 space-y-2">
                   <Label htmlFor="itemSearch">Search Items</Label>
@@ -552,7 +522,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                 </div>
               </div>
 
-              {/* Item Selection */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="selectedItem">Select Item</Label>
@@ -591,7 +560,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                 </div>
               </div>
               
-              {/* Custom Weight and Price Section */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-3 border rounded-md bg-secondary/10">
                 <div className="space-y-2">
                   <Label htmlFor="manualWeight">
@@ -641,7 +609,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                 </div>
               </div>
               
-              {/* Item Table */}
               <div className="border rounded-md overflow-hidden">
                 <Table>
                   <TableHeader className="bg-secondary/50">
@@ -695,7 +662,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
               </div>
             </TabsContent>
             
-            {/* Payments Tab */}
             <TabsContent value="payments" className="space-y-4 pt-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Payment Methods</h3>
@@ -713,7 +679,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                 {payments.length > 0 ? (
                   payments.map((payment, index) => (
                     <div key={index} className="flex items-end gap-2 p-3 border rounded-md bg-secondary/10">
-                      {/* Payment Method */}
                       <div className="space-y-2 flex-1">
                         <Label htmlFor={`payment-method-${index}`}>Method</Label>
                         <Select
@@ -746,7 +711,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                         </Select>
                       </div>
                       
-                      {/* Payment Amount */}
                       <div className="space-y-2 flex-1">
                         <Label htmlFor={`payment-amount-${index}`}>Amount</Label>
                         <Input
@@ -759,7 +723,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                         />
                       </div>
                       
-                      {/* Payment Currency */}
                       <div className="space-y-2 flex-1">
                         <Label htmlFor={`payment-currency-${index}`}>Currency</Label>
                         <Select
@@ -778,7 +741,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                         </Select>
                       </div>
                       
-                      {/* Gold-specific fields */}
                       {payment.method === 'Gold' && (
                         <>
                           <div className="space-y-2 flex-1">
@@ -816,7 +778,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                         </>
                       )}
                       
-                      {/* Remove Payment Button */}
                       <Button
                         type="button"
                         variant="ghost"
@@ -835,24 +796,20 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                 )}
               </div>
               
-              {/* Create Debt Option */}
-              {formData.totalAmount && formData.totalAmount > 0 && (
-                <div className="flex items-center space-x-2 mt-4">
-                  <Checkbox 
-                    id="createDebt" 
-                    checked={createDebt} 
-                    onCheckedChange={(checked) => setCreateDebt(checked === true)} 
-                  />
-                  <Label htmlFor="createDebt" className="cursor-pointer">
-                    {formData.type === 'Buy' ? 
-                      "Create debt record (we owe the supplier)" : 
-                      "Create debt record (customer owes us)"
-                    }
-                  </Label>
-                </div>
-              )}
+              <div className="flex items-center space-x-2 mt-4">
+                <Checkbox 
+                  id="createDebt" 
+                  checked={createDebt} 
+                  onCheckedChange={(checked) => setCreateDebt(checked === true)} 
+                />
+                <Label htmlFor="createDebt" className="cursor-pointer">
+                  {formData.type === 'Buy' ? 
+                    "Create debt record (we owe the supplier)" : 
+                    "Create debt record (customer owes us)"
+                  }
+                </Label>
+              </div>
               
-              {/* Transaction Summary */}
               <div className="mt-4 p-4 border rounded-md bg-secondary/20">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
@@ -878,7 +835,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
             </TabsContent>
           </Tabs>
           
-          {/* Notes Section */}
           <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>
             <Textarea
@@ -890,7 +846,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
           </div>
         </CardContent>
         
-        {/* Form Footer */}
         <CardFooter className="flex justify-between bg-secondary/30 border-t p-4 sticky bottom-0 z-10">
           <Button variant="outline" onClick={onCancel} type="button">
             Cancel

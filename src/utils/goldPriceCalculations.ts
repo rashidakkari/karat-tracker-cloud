@@ -57,15 +57,6 @@ export const calculateJewelrySellingPrice = (
 
 /**
  * Calculate transaction pricing for items
- * @param type - 'buy' or 'sell'
- * @param category - 'bars', 'coins', or 'jewelry'
- * @param spotPrice - current spot price
- * @param weight - item weight
- * @param weightUnit - item weight unit
- * @param purity - item purity
- * @param commissionRate - commission rate
- * @param commissionType - 'percentage', 'flat', or 'per_gram'
- * @returns transaction price
  */
 export const calculateTransactionPrice = (
   type: 'buy' | 'sell',
@@ -119,11 +110,6 @@ export const calculateTransactionPrice = (
 
 /**
  * Update inventory item weight based on transaction
- * @param currentWeight - current weight of the item
- * @param weightUnit - current weight unit
- * @param transactionWeight - weight involved in transaction
- * @param type - 'buy' or 'sell'
- * @returns the new weight
  */
 export const updateInventoryWeight = (
   currentWeight: number,

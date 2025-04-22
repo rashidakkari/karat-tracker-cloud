@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -15,7 +14,8 @@ import {
   calculateJewelrySellingPrice,
   convertToGrams,
   convertFromGrams,
-  convertTo24K
+  convertTo24K,
+  getPurityFactor
 } from '@/utils/goldCalculations';
 import { ArrowRight, Calculator, RefreshCw } from 'lucide-react';
 
@@ -58,11 +58,9 @@ const PriceCalculator: React.FC<PriceCalculatorProps> = ({ spotPrice, onUpdateSp
   const [purityResult, setPurityResult] = useState<number>(0);
 
   useEffect(() => {
-    // Set the local spot price when the prop changes
     setLocalSpotPrice(spotPrice);
   }, [spotPrice]);
 
-  // Calculate gold bar prices
   useEffect(() => {
     const weightInGrams = convertToGrams(barWeight, barWeightUnit);
     const buyPrice = calculateBarBuyingPrice(localSpotPrice, weightInGrams, barPurity, barCommission);
@@ -72,24 +70,21 @@ const PriceCalculator: React.FC<PriceCalculatorProps> = ({ spotPrice, onUpdateSp
     setBarSellingPrice(sellPrice);
   }, [localSpotPrice, barWeight, barWeightUnit, barPurity, barCommission]);
 
-  // Calculate jewelry prices
   useEffect(() => {
     const weightInGrams = convertToGrams(jewelryWeight, jewelryWeightUnit);
-    const buyPrice = calculateJewelryBuyingPrice(localSpotPrice, weightInGrams, jewelryPurity, jewelryCommission);
-    const sellPrice = calculateJewelrySellingPrice(localSpotPrice, weightInGrams, jewelryPurity, jewelryCommission);
+    const buyPrice = calculateJewelryBuyingPrice(localSpotPrice, weightInGrams, jewelryPurity, jewelryCommission, getPurityFactor);
+    const sellPrice = calculateJewelrySellingPrice(localSpotPrice, weightInGrams, jewelryPurity, jewelryCommission, getPurityFactor);
     
     setJewelryBuyingPrice(buyPrice);
     setJewelrySellingPrice(sellPrice);
   }, [localSpotPrice, jewelryWeight, jewelryWeightUnit, jewelryPurity, jewelryCommission]);
 
-  // Calculate weight conversion
   useEffect(() => {
     const weightInGrams = convertToGrams(conversionWeight, conversionFromUnit);
     const result = convertFromGrams(weightInGrams, conversionToUnit);
     setConversionResult(result);
   }, [conversionWeight, conversionFromUnit, conversionToUnit]);
 
-  // Calculate purity conversion
   useEffect(() => {
     const result = convertTo24K(purityWeight, purityType);
     setPurityResult(result);
