@@ -1,101 +1,83 @@
 
+import { format } from "date-fns";
+
 /**
- * Formats a number as currency
+ * Format currency with proper symbol and locale
  */
 export const formatCurrency = (
   amount: number,
-  currency: string = 'USD',
-  locale: string = 'en-US'
+  currencyCode: string = "USD"
 ): string => {
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: currency,
-  }).format(amount);
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currencyCode,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch (e) {
+    console.error("Error formatting currency:", e);
+    return `${currencyCode} ${amount.toFixed(2)}`;
+  }
 };
 
 /**
- * Formats a weight with unit
+ * Format weight with proper unit
  */
 export const formatWeight = (
-  weight: number,
-  unit: string = 'g',
-  precision: number = 2
+  weight: number | undefined,
+  unit: string = "g"
 ): string => {
-  return `${weight.toFixed(precision)} ${unit}`;
-};
-
-/**
- * Formats a date
- */
-export const formatDate = (
-  date: string | Date,
-  locale: string = 'en-US',
-  options: Intl.DateTimeFormatOptions = { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
-  }
-): string => {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return new Intl.DateTimeFormat(locale, options).format(dateObj);
-};
-
-/**
- * Formats a percentage
- */
-export const formatPercentage = (
-  value: number,
-  precision: number = 2
-): string => {
-  return `${(value * 100).toFixed(precision)}%`;
-};
-
-/**
- * Shortens a number (e.g., 1,000 -> 1K)
- */
-export const shortenNumber = (
-  num: number,
-  precision: number = 1
-): string => {
-  const map = [
-    { suffix: 'T', threshold: 1e12 },
-    { suffix: 'B', threshold: 1e9 },
-    { suffix: 'M', threshold: 1e6 },
-    { suffix: 'K', threshold: 1e3 },
-    { suffix: '', threshold: 1 },
-  ];
-
-  const found = map.find(x => Math.abs(num) >= x.threshold);
-  if (found) {
-    const formatted = (num / found.threshold).toFixed(precision);
-    return formatted + found.suffix;
-  }
-
-  return num.toString();
-};
-
-/**
- * Formats a karat value
- */
-export const formatKarat = (
-  karat: number
-): string => {
-  return `${karat}K`;
-};
-
-/**
- * Format a phone number
- */
-export const formatPhoneNumber = (
-  phoneNumber: string,
-  format: string = 'xxx-xxx-xxxx'
-): string => {
-  let formatted = format;
-  const digits = phoneNumber.replace(/\D/g, '');
+  if (weight === undefined) return "0g";
   
-  for (let i = 0; i < digits.length && i < format.replace(/[^x]/g, '').length; i++) {
-    formatted = formatted.replace('x', digits[i]);
+  const roundedWeight = Math.round(weight * 100) / 100;
+  return `${roundedWeight}${unit}`;
+};
+
+/**
+ * Format date and time
+ */
+export const formatDateTime = (dateTimeStr: string): string => {
+  try {
+    const date = new Date(dateTimeStr);
+    if (isNaN(date.getTime())) {
+      throw new Error("Invalid date");
+    }
+    return format(date, "MMM d, yyyy h:mm a");
+  } catch (e) {
+    console.error("Error formatting date:", e, dateTimeStr);
+    return dateTimeStr || "Unknown date";
   }
-  
-  return formatted;
+};
+
+/**
+ * Format date only
+ */
+export const formatDate = (dateStr: string): string => {
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      throw new Error("Invalid date");
+    }
+    return format(date, "MMM d, yyyy");
+  } catch (e) {
+    console.error("Error formatting date:", e);
+    return dateStr || "Unknown date";
+  }
+};
+
+/**
+ * Format percentage
+ */
+export const formatPercentage = (value: number): string => {
+  return `${(value * 100).toFixed(2)}%`;
+};
+
+/**
+ * Format profit ratio
+ */
+export const formatProfitRatio = (profit: number, cost: number): string => {
+  if (cost === 0) return "∞";
+  const ratio = (profit / cost) * 100;
+  return `${ratio.toFixed(2)}%`;
 };

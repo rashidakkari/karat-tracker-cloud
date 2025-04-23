@@ -10,11 +10,12 @@ const FeaturedItems = () => {
 
   // Get featured inventory items
   const featuredInventoryItems = React.useMemo(() => {
+    if (!inventory || !featuredItems) return [];
     return inventory.filter(item => featuredItems.includes(item.id));
   }, [inventory, featuredItems]);
 
   // Empty state when no featured items exist
-  if (featuredInventoryItems.length === 0) {
+  if (!featuredInventoryItems || featuredInventoryItems.length === 0) {
     return (
       <Card>
         <CardHeader>

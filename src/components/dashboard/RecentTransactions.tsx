@@ -1,157 +1,78 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatCurrency } from "@/utils/formatters";
+import { formatCurrency, formatDateTime } from "@/utils/formatters";
 
 interface Transaction {
   id: string;
-  type: string;
   dateTime: string;
-  quantity: number;
+  type: string;
   totalPrice: number;
-  currency: string;
+  customer?: string;
 }
 
 interface RecentTransactionsProps {
   transactions: Transaction[];
 }
 
-const RecentTransactions: React.FC<RecentTransactionsProps> = ({ transactions }) => {
+const RecentTransactions: React.FC<RecentTransactionsProps> = ({ transactions = [] }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.6 }}
-      className="col-span-1 lg:col-span-2"
+      className="col-span-2"
     >
       <Card className="overflow-hidden border-karat-100">
         <CardHeader className="pb-3">
-          <CardTitle>Recent Transactions</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Recent Transactions</CardTitle>
+            <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center">
+              <Clock className="h-3 w-3 text-blue-600" />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="all">
-            <TabsList className="mb-4">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="sales">Sales</TabsTrigger>
-              <TabsTrigger value="purchases">Purchases</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="all" className="space-y-2">
-              {transactions.length === 0 ? (
-                <p className="text-karat-500 text-center py-4">No recent transactions</p>
-              ) : (
-                transactions.slice(0, 5).map((tx) => (
-                  <div
-                    key={tx.id}
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-karat-50 transition-colors"
-                  >
-                    <div className="flex items-center">
-                      <div
-                        className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                          tx.type === "buy" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600"
-                        }`}
-                      >
-                        {tx.type === "buy" ? (
-                          <ArrowDown className="h-4 w-4" />
-                        ) : (
-                          <ArrowUp className="h-4 w-4" />
-                        )}
-                      </div>
-                      <div className="ml-3">
-                        <p className="text-sm font-medium text-karat-900">
-                          {tx.type === "buy" ? "Purchase" : "Sale"} #{tx.id.substring(0, 6)}
-                        </p>
-                        <p className="text-xs text-karat-500">
-                          {new Date(tx.dateTime).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-karat-900">
-                        {formatCurrency(tx.totalPrice, tx.currency)}
-                      </p>
-                      <p className="text-xs text-karat-500">Quantity: {tx.quantity}</p>
-                    </div>
+          {transactions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mb-3">
+                <Clock className="h-6 w-6 text-blue-600" />
+              </div>
+              <p className="text-karat-700 font-medium">No recent transactions</p>
+              <p className="text-karat-500 text-sm mt-1">
+                Transactions from the last 7 days will appear here
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {transactions.map((tx) => (
+                <div
+                  key={tx.id}
+                  className="flex items-center justify-between p-3 border-b border-karat-100 last:border-0"
+                >
+                  <div>
+                    <p className="font-medium text-karat-900">
+                      {tx.type === "buy" ? "Purchase" : "Sale"}
+                    </p>
+                    <p className="text-xs text-karat-600 mt-1">
+                      {formatDateTime(tx.dateTime)}
+                      {tx.customer ? ` • ${tx.customer}` : ""}
+                    </p>
                   </div>
-                ))
-              )}
-            </TabsContent>
-            
-            <TabsContent value="sales" className="space-y-2">
-              {transactions.filter(tx => tx.type === "sell").length === 0 ? (
-                <p className="text-karat-500 text-center py-4">No recent sales</p>
-              ) : (
-                transactions
-                  .filter(tx => tx.type === "sell")
-                  .slice(0, 5)
-                  .map((tx) => (
-                    <div
-                      key={tx.id}
-                      className="flex items-center justify-between p-3 rounded-lg hover:bg-karat-50 transition-colors"
-                    >
-                      <div className="flex items-center">
-                        <div className="h-8 w-8 rounded-full flex items-center justify-center bg-blue-100 text-blue-600">
-                          <ArrowUp className="h-4 w-4" />
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm font-medium text-karat-900">
-                            Sale #{tx.id.substring(0, 6)}
-                          </p>
-                          <p className="text-xs text-karat-500">
-                            {new Date(tx.dateTime).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-karat-900">
-                          {formatCurrency(tx.totalPrice, tx.currency)}
-                        </p>
-                        <p className="text-xs text-karat-500">Quantity: {tx.quantity}</p>
-                      </div>
-                    </div>
-                  ))
-              )}
-            </TabsContent>
-            
-            <TabsContent value="purchases" className="space-y-2">
-              {transactions.filter(tx => tx.type === "buy").length === 0 ? (
-                <p className="text-karat-500 text-center py-4">No recent purchases</p>
-              ) : (
-                transactions
-                  .filter(tx => tx.type === "buy")
-                  .slice(0, 5)
-                  .map((tx) => (
-                    <div
-                      key={tx.id}
-                      className="flex items-center justify-between p-3 rounded-lg hover:bg-karat-50 transition-colors"
-                    >
-                      <div className="flex items-center">
-                        <div className="h-8 w-8 rounded-full flex items-center justify-center bg-green-100 text-green-600">
-                          <ArrowDown className="h-4 w-4" />
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm font-medium text-karat-900">
-                            Purchase #{tx.id.substring(0, 6)}
-                          </p>
-                          <p className="text-xs text-karat-500">
-                            {new Date(tx.dateTime).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-karat-900">
-                          {formatCurrency(tx.totalPrice, tx.currency)}
-                        </p>
-                        <p className="text-xs text-karat-500">Quantity: {tx.quantity}</p>
-                      </div>
-                    </div>
-                  ))
-              )}
-            </TabsContent>
-          </Tabs>
+                  <span
+                    className={`font-semibold ${
+                      tx.type === "buy" ? "text-red-600" : "text-green-600"
+                    }`}
+                  >
+                    {tx.type === "buy" ? "-" : "+"}
+                    {formatCurrency(tx.totalPrice)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>
