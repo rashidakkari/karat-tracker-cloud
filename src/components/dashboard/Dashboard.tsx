@@ -6,11 +6,10 @@ import InventoryDistributionChart from "./InventoryDistributionChart";
 import RecentTransactions from "./RecentTransactions";
 import LowStockAlerts from "./LowStockAlerts";
 import SpotPriceUpdater from "./SpotPriceUpdater";
-import { InventoryItem as ModelInventoryItem } from "@/models/inventory";
-import { getPurityFactor, convertToGrams } from "@/utils/goldCalculations";
 import DashboardStats from "./DashboardStats";
 import RegisterSelector from "./RegisterSelector";
 import InventorySearch from "./InventorySearch";
+import { getLowStockItems } from "@/utils/inventoryUtils";
 
 const spotPriceHistory = [
   { date: "Jan", price: 1950 },
@@ -60,28 +59,7 @@ const Dashboard: React.FC = () => {
     })
     .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
   
-  const mapToModelInventoryItem = (item: typeof inventory[0]): ModelInventoryItem => {
-    return {
-      id: item.id,
-      name: item.name,
-      description: item.description || '',
-      weight: item.weight,
-      weightUnit: (item.weightUnit === "kg" ? "g" : item.weightUnit) as "g" | "oz" | "tola" | "baht",
-      purity: item.purity,
-      costPrice: item.costPrice || 0,
-      category: item.category as any,
-      quantity: item.quantity,
-      equivalent24k: item.equivalent24k || 0,
-      dateAcquired: item.dateAdded || '',
-      isAvailable: true,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-  };
-  
-  const lowStockItems = filteredInventory
-    .filter(item => item.quantity <= 2)
-    .map(mapToModelInventoryItem);
+  const lowStockItems = getLowStockItems(inventory, 2, registerFilter);
   
   const getRegisterBalance = () => {
     if (registerFilter === "wholesale") {

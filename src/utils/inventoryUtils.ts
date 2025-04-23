@@ -1,4 +1,3 @@
-
 import { InventoryItem } from "@/contexts/types";
 import { convertToGrams, getPurityFactor } from "./goldCalculations";
 
@@ -44,13 +43,41 @@ export const getCategoryTotals = (items: InventoryItem[]): { [key: string]: numb
 };
 
 /**
- * Get inventory items that are below the low stock threshold
- * @param items - Array of inventory items
- * @param threshold - Low stock threshold quantity (default: 2)
- * @returns Array of items below threshold
+ * Get low stock items from inventory based on a threshold
+ * @param inventory - Array of inventory items
+ * @param threshold - Quantity threshold for low stock (default: 2)
+ * @param registerFilter - Filter by register type (optional)
+ * @returns Array of low stock items
  */
-export const getLowStockItems = (items: InventoryItem[], threshold: number = 2): InventoryItem[] => {
-  return items.filter(item => item.quantity <= threshold);
+export const getLowStockItems = (
+  inventory: any[],
+  threshold: number = 2,
+  registerFilter: "all" | "wholesale" | "retail" = "all"
+): any[] => {
+  // First filter by register if needed
+  const filteredInventory = registerFilter === "all" 
+    ? inventory 
+    : inventory.filter(item => item.type === registerFilter);
+
+  // Then filter by quantity and map to model type
+  return filteredInventory
+    .filter(item => item.quantity <= threshold)
+    .map(item => ({
+      id: item.id,
+      name: item.name,
+      description: item.description || '',
+      weight: item.weight,
+      weightUnit: (item.weightUnit === "kg" ? "g" : item.weightUnit),
+      purity: item.purity,
+      costPrice: item.costPrice || 0,
+      category: item.category,
+      quantity: item.quantity,
+      equivalent24k: item.equivalent24k || 0,
+      dateAcquired: item.dateAdded || '',
+      isAvailable: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }));
 };
 
 /**
