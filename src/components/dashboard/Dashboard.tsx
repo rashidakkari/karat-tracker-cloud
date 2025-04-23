@@ -10,7 +10,7 @@ import DashboardStats from "./DashboardStats";
 import RegisterSelector from "./RegisterSelector";
 import InventorySearch from "./InventorySearch";
 import { getLowStockItems } from "@/utils/inventoryUtils";
-import { getRegisterBalance } from "@/utils/financialUtils";
+import { getRegisterBalance } from "@/utils/financial/registerUtils";
 
 const spotPriceHistory = [
   { date: "Jan", price: 1950 },
