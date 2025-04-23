@@ -10,6 +10,7 @@ import DashboardStats from "./DashboardStats";
 import RegisterSelector from "./RegisterSelector";
 import InventorySearch from "./InventorySearch";
 import { getLowStockItems } from "@/utils/inventoryUtils";
+import { getRegisterBalance } from "@/utils/financialUtils";
 
 const spotPriceHistory = [
   { date: "Jan", price: 1950 },
@@ -42,14 +43,14 @@ const Dashboard: React.FC = () => {
   const filteredInventory = registerFilter === "all" 
     ? inventory 
     : inventory.filter(item => item.type === registerFilter);
-  
+
   const total24kWeight = filteredInventory.reduce((total, item) => {
-    const weightInGrams = convertToGrams(item.weight, item.weightUnit);
-    const purityFactor = getPurityFactor(item.purity);
+    const weightInGrams = item.weight;
+    const purityFactor = parseFloat(item.purity) / 1000;
     const pureGoldWeight = weightInGrams * purityFactor;
     return total + pureGoldWeight;
   }, 0);
-
+  
   const recentTransactions = (transactions || [])
     .filter(tx => {
       const txDate = new Date(tx.dateTime);
@@ -61,17 +62,8 @@ const Dashboard: React.FC = () => {
   
   const lowStockItems = getLowStockItems(inventory, 2, registerFilter);
   
-  const getRegisterBalance = () => {
-    if (registerFilter === "wholesale") {
-      return financial.wholesaleBalance?.[currency] || 0;
-    } else if (registerFilter === "retail") {
-      return financial.retailBalance?.[currency] || 0;
-    } else {
-      const wholesaleBalance = financial.wholesaleBalance?.[currency] || 0;
-      const retailBalance = financial.retailBalance?.[currency] || 0;
-      return wholesaleBalance + retailBalance;
-    }
-  };
+  const currentRegisterBalance = () => 
+    getRegisterBalance(registerFilter, financial, currency);
   
   return (
     <div className="space-y-6">
@@ -87,7 +79,7 @@ const Dashboard: React.FC = () => {
       <RegisterSelector
         registerFilter={registerFilter}
         setRegisterFilter={setRegisterFilter}
-        getRegisterBalance={getRegisterBalance}
+        getRegisterBalance={currentRegisterBalance}
         currency={currency}
       />
       
