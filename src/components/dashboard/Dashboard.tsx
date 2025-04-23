@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useApp, Currency } from "@/contexts/AppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +12,6 @@ import DashboardStats from "./DashboardStats";
 import RegisterSelector from "./RegisterSelector";
 import InventorySearch from "./InventorySearch";
 
-// Mock spot price history data
 const spotPriceHistory = [
   { date: "Jan", price: 1950 },
   { date: "Feb", price: 1980 },
@@ -27,13 +25,11 @@ const spotPriceHistory = [
 const Dashboard: React.FC = () => {
   const { inventory, financial, updateSpotPrice } = useApp();
   
-  // Initialize empty transactions array to prevent filter errors
   const transactions = [];
   
   const [currency] = React.useState<Currency>("USD");
   const [registerFilter, setRegisterFilter] = useState<"all" | "wholesale" | "retail">("all");
   
-  // Get customer debts and borrowed debts totals
   const customerDebtTotal = (financial.customerDebts || []).reduce(
     (total, debt) => total + debt.amount,
     0
@@ -44,29 +40,10 @@ const Dashboard: React.FC = () => {
     0
   );
   
-  // Filter inventory by register type if needed
   const filteredInventory = registerFilter === "all" 
     ? inventory 
     : inventory.filter(item => item.type === registerFilter);
   
-  // Calculate inventory distribution for the chart
-  const inventoryDistribution = React.useMemo(() => {
-    const distribution = { "Bars": 0, "Coins": 0, "Jewelry": 0 };
-    
-    filteredInventory.forEach(item => {
-      const category = item.category.charAt(0).toUpperCase() + item.category.slice(1);
-      distribution[category as keyof typeof distribution] += item.equivalent24k || 0;
-    });
-    
-    return Object.entries(distribution).map(([name, value]) => ({
-      name,
-      value: Math.round(value) // Round to nearest gram for better display
-    }));
-  }, [filteredInventory]);
-  
-  const COLORS = ["#D4AF37", "#AA8C2C", "#F6E5A1"];
-  
-  // Calculate total 24K equivalent weight
   const total24kWeight = filteredInventory.reduce((total, item) => {
     const weightInGrams = convertToGrams(item.weight, item.weightUnit);
     const purityFactor = getPurityFactor(item.purity);
@@ -74,7 +51,6 @@ const Dashboard: React.FC = () => {
     return total + pureGoldWeight;
   }, 0);
 
-  // Get recent transactions from the last 7 days - safely handle undefined transactions
   const recentTransactions = (transactions || [])
     .filter(tx => {
       const txDate = new Date(tx.dateTime);
@@ -84,7 +60,6 @@ const Dashboard: React.FC = () => {
     })
     .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
   
-  // Map inventory items to model format for low stock alerts
   const mapToModelInventoryItem = (item: typeof inventory[0]): ModelInventoryItem => {
     return {
       id: item.id,
@@ -104,19 +79,16 @@ const Dashboard: React.FC = () => {
     };
   };
   
-  // Get items with low stock for alerts
   const lowStockItems = filteredInventory
     .filter(item => item.quantity <= 2)
     .map(mapToModelInventoryItem);
   
-  // Get the register balance based on selected type
   const getRegisterBalance = () => {
     if (registerFilter === "wholesale") {
       return financial.wholesaleBalance?.[currency] || 0;
     } else if (registerFilter === "retail") {
       return financial.retailBalance?.[currency] || 0;
     } else {
-      // For "all", sum both registers
       const wholesaleBalance = financial.wholesaleBalance?.[currency] || 0;
       const retailBalance = financial.retailBalance?.[currency] || 0;
       return wholesaleBalance + retailBalance;
@@ -134,7 +106,6 @@ const Dashboard: React.FC = () => {
         <SpotPriceUpdater currentPrice={financial.spotPrice} onUpdate={updateSpotPrice} />
       </div>
       
-      {/* Register selector */}
       <RegisterSelector
         registerFilter={registerFilter}
         setRegisterFilter={setRegisterFilter}
@@ -142,7 +113,6 @@ const Dashboard: React.FC = () => {
         currency={currency}
       />
       
-      {/* Dashboard Stats */}
       <DashboardStats
         spotPrice={financial.spotPrice}
         total24kWeight={total24kWeight}
@@ -152,7 +122,6 @@ const Dashboard: React.FC = () => {
         registerFilter={registerFilter}
       />
       
-      {/* Inventory Spot Check */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-medium">Inventory Spot Check</CardTitle>
@@ -164,7 +133,10 @@ const Dashboard: React.FC = () => {
       
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         <PriceChart data={spotPriceHistory} />
-        <InventoryDistributionChart data={inventoryDistribution} colors={COLORS} />
+        <InventoryDistributionChart 
+          inventory={inventory}
+          registerFilter={registerFilter}
+        />
       </div>
       
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">

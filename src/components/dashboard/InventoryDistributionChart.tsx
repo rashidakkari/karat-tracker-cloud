@@ -4,15 +4,41 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
+interface DistributionData {
+  name: string;
+  value: number;
+}
+
 interface InventoryDistributionChartProps {
-  data: Array<{ name: string; value: number }>;
-  colors: string[];
+  inventory: any[];
+  registerFilter: "all" | "wholesale" | "retail";
 }
 
 const InventoryDistributionChart: React.FC<InventoryDistributionChartProps> = ({ 
-  data, 
-  colors 
+  inventory, 
+  registerFilter 
 }) => {
+  // Calculate inventory distribution for the chart
+  const inventoryDistribution = React.useMemo(() => {
+    const distribution = { "Bars": 0, "Coins": 0, "Jewelry": 0 };
+    
+    const filteredInventory = registerFilter === "all" 
+      ? inventory 
+      : inventory.filter(item => item.type === registerFilter);
+    
+    filteredInventory.forEach(item => {
+      const category = item.category.charAt(0).toUpperCase() + item.category.slice(1);
+      distribution[category as keyof typeof distribution] += item.equivalent24k || 0;
+    });
+    
+    return Object.entries(distribution).map(([name, value]) => ({
+      name,
+      value: Math.round(value) // Round to nearest gram for better display
+    }));
+  }, [inventory, registerFilter]);
+
+  const COLORS = ["#D4AF37", "#AA8C2C", "#F6E5A1"];
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -29,7 +55,7 @@ const InventoryDistributionChart: React.FC<InventoryDistributionChartProps> = ({
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={data}
+                  data={inventoryDistribution}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -38,12 +64,12 @@ const InventoryDistributionChart: React.FC<InventoryDistributionChartProps> = ({
                   dataKey="value"
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                 >
-                  {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                  {inventoryDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value: number) => [`${value}%`, "Percentage"]}
+                  formatter={(value: number) => [`${value}g`, "24K Equivalent Weight"]}
                   contentStyle={{
                     backgroundColor: "white",
                     border: "1px solid #E5E7EB",
