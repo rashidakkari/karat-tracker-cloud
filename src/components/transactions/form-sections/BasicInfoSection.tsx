@@ -3,14 +3,13 @@ import React from 'react';
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { TransactionType } from '@/contexts/types';
 
 interface BasicInfoSectionProps {
-  type: TransactionType;
+  type: 'buy' | 'sell';
   registerType: string;
   customerName: string;
   customerPhone: string;
-  onTypeChange: (value: TransactionType) => void;
+  onTypeChange: (value: 'buy' | 'sell') => void;
   onRegisterTypeChange: (value: string) => void;
   onCustomerNameChange: (value: string) => void;
   onCustomerPhoneChange: (value: string) => void;

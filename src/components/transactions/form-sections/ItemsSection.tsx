@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, QrCode, Calculator, PlusCircle, MinusCircle } from 'lucide-react';
-import { InventoryItem, TransactionItem } from '@/models/inventory';
+import { InventoryItem } from '@/models/inventory';
+import { TransactionItem } from '@/models/transactions';
 import { toast } from 'sonner';
 
 interface ItemsSectionProps {

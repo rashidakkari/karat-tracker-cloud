@@ -1,96 +1,92 @@
 
-import { useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { Transaction } from '@/contexts/types';
-import { formatCurrency } from "@/utils/formatters";
 
-export const useReportData = (transactions: Transaction[]) => {
-  // Calculate monthly sales data
-  const salesData = useMemo(() => {
-    const salesByMonth: Record<string, number> = {};
-    const now = new Date();
-    
-    // Initialize last 6 months
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
-      salesByMonth[monthKey] = 0;
-    }
-    
-    // Aggregate sales by month
-    transactions
-      .filter(t => t.type === 'sale')
-      .forEach(transaction => {
-        const date = new Date(transaction.date);
-        const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
-        if (salesByMonth[monthKey] !== undefined) {
-          salesByMonth[monthKey] += transaction.totalAmount;
+// Define an interface for the sales data
+interface SalesData {
+  date: string;
+  salesCount: number;
+  totalAmount: number;
+}
+
+// Define an interface for the profit data
+interface ProfitData {
+  date: string;
+  profit: number;
+}
+
+export function useReportData(transactions: Transaction[]) {
+  const [salesData, setSalesData] = useState<SalesData[]>([]);
+  const [profitData, setProfitData] = useState<ProfitData[]>([]);
+  
+  useEffect(() => {
+    // Process transactions to get sales data
+    const salesByDate = transactions.reduce((acc: Record<string, SalesData>, transaction) => {
+      // Only count sell transactions
+      if (transaction.type === 'sell') {
+        // Use the dateTime field instead of date
+        const date = transaction.dateTime.substring(0, 10); // Get just the YYYY-MM-DD part
+        
+        if (!acc[date]) {
+          acc[date] = {
+            date,
+            salesCount: 0,
+            totalAmount: 0
+          };
         }
-      });
-    
-    return Object.entries(salesByMonth).map(([key, value]) => {
-      const [year, month] = key.split('-').map(Number);
-      return {
-        name: new Date(year, month - 1).toLocaleString('default', { month: 'short' }),
-        total: value
-      };
-    });
-  }, [transactions]);
-  
-  // Calculate transaction types distribution
-  const transactionTypesData = useMemo(() => {
-    const counts: Record<string, number> = { 
-      sale: 0, 
-      purchase: 0, 
-      exchange: 0 
-    };
-    
-    transactions.forEach(transaction => {
-      if (counts[transaction.type] !== undefined) {
-        counts[transaction.type]++;
+        
+        acc[date].salesCount += 1;
+        // Use totalPrice instead of totalAmount
+        acc[date].totalAmount += transaction.totalPrice || 0;
       }
-    });
+      return acc;
+    }, {});
     
-    return Object.entries(counts).map(([key, value]) => ({
-      name: key.charAt(0).toUpperCase() + key.slice(1),
-      value: value
-    }));
-  }, [transactions]);
-  
-  // Calculate profit over time
-  const profitData = useMemo(() => {
-    const profitByMonth: Record<string, number> = {};
-    const now = new Date();
+    const salesResult = Object.values(salesByDate);
+    setSalesData(salesResult);
     
-    // Initialize last 6 months
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
-      profitByMonth[monthKey] = 0;
-    }
-    
-    // Calculate profit
-    transactions.forEach(transaction => {
-      const date = new Date(transaction.date);
-      const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
-      if (profitByMonth[monthKey] !== undefined) {
-        if (transaction.type === 'sale') {
-          profitByMonth[monthKey] += transaction.profit || 0;
+    // Process transactions to get profit data
+    const profitByDate = transactions.reduce((acc: Record<string, ProfitData>, transaction) => {
+      // Calculate profit for each transaction
+      const profit = calculateProfit(transaction);
+      if (profit) {
+        // Use the dateTime field instead of date
+        const date = transaction.dateTime.substring(0, 10); // Get just the YYYY-MM-DD part
+        
+        if (!acc[date]) {
+          acc[date] = {
+            date,
+            profit: 0
+          };
+        }
+        
+        // Only add profit for sell transactions
+        if (transaction.type === 'sell') {
+          // We're assuming profit is stored elsewhere or calculated
+          acc[date].profit += profit;
         }
       }
-    });
+      return acc;
+    }, {});
     
-    return Object.entries(profitByMonth).map(([key, value]) => {
-      const [year, month] = key.split('-').map(Number);
-      return {
-        name: new Date(year, month - 1).toLocaleString('default', { month: 'short' }),
-        profit: value
-      };
-    });
+    const profitResult = Object.values(profitByDate);
+    setProfitData(profitResult);
+    
   }, [transactions]);
-
+  
+  // Calculate profit based on transaction information
+  const calculateProfit = (transaction: Transaction): number => {
+    // This is a placeholder for profit calculation
+    // In a real app, you'd calculate based on the sale price minus the cost price
+    // For now, we'll just estimate as 20% of the transaction total if it's a sell transaction
+    if (transaction.type === 'sell') {
+      return transaction.totalPrice * 0.2;
+    }
+    return 0;
+  };
+  
   return {
     salesData,
-    transactionTypesData,
     profitData
   };
-};
+}

@@ -1,3 +1,4 @@
+import { InventoryItem } from '@/models/inventory';
 
 export type TransactionType = 'buy' | 'sell';
 export type PaymentMethod = 'Cash' | 'Gold' | 'Mixed' | 'Credit Card' | 'Bank Transfer' | 'Other';

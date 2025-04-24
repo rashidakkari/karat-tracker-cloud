@@ -1,3 +1,4 @@
+
 import { Transaction, InventoryItem, Currency } from './types';
 import { toast } from 'sonner';
 import { formatTransaction } from '@/services/transactions/transactionUtils';
@@ -54,7 +55,7 @@ export const createTransactionService = (
               transaction.customerName,
               transaction.customerPhone,
               unpaidAmount,
-              transaction.currency,
+              transaction.currency as Currency,
               debtDescription,
               new Date().toISOString()
             );
@@ -80,7 +81,7 @@ export const createTransactionService = (
               transaction.customerName,
               transaction.customerPhone,
               unpaidAmount,
-              transaction.currency,
+              transaction.currency as Currency,
               debtDescription,
               new Date().toISOString()
             );

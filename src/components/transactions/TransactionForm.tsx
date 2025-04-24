@@ -8,7 +8,6 @@ import {
   calculateJewelrySellingPrice,
   GoldPurity,
   WeightUnit,
-  CurrencyCode,
   getPurityFactor
 } from '@/utils/goldCalculations';
 import { Button } from '@/components/ui/button';
@@ -16,10 +15,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import { Save } from 'lucide-react';
@@ -27,6 +23,7 @@ import BasicInfoSection from './form-sections/BasicInfoSection';
 import PricingSection from './form-sections/PricingSection';
 import ItemsSection from './form-sections/ItemsSection';
 import PaymentsSection from './form-sections/PaymentsSection';
+import { Currency } from '@/contexts/types';
 
 interface TransactionFormProps {
   transaction?: Transaction;
@@ -53,7 +50,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       payments: [],
       totalAmount: 0,
       balance: 0,
-      currency: 'USD',
+      currency: 'USD' as Currency,
       spotPriceAtTransaction: currentSpotPrice,
       commission: 0,
       commissionType: 'Fixed',
@@ -74,6 +71,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   const [customUnitPrice, setCustomUnitPrice] = useState<number | undefined>(undefined);
   const [createDebt, setCreateDebt] = useState<boolean>(false);
   const [filteredItems, setFilteredItems] = useState<InventoryItem[]>([]);
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
   
   const isEditing = !!transaction;
 
@@ -226,7 +224,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     const newPayment: Payment = {
       method: 'Cash',
       amount: 0,
-      currency: formData.currency as CurrencyCode
+      currency: formData.currency as Currency
     };
     
     setPayments([...payments, newPayment]);
@@ -268,14 +266,14 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
         ...updatedPayments[0],
         method: 'Cash',
         amount: totalAmount,
-        currency: formData.currency as CurrencyCode
+        currency: formData.currency as Currency
       };
       setPayments(updatedPayments);
     } else {
       const newPayment: Payment = {
         method: 'Cash',
         amount: totalAmount,
-        currency: formData.currency as CurrencyCode
+        currency: formData.currency as Currency
       };
       setPayments([newPayment]);
     }
@@ -373,7 +371,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
           />
           
           <PricingSection
-            currency={formData.currency || 'USD'}
+            currency={formData.currency as Currency || 'USD'}
             spotPrice={formData.spotPriceAtTransaction || currentSpotPrice}
             commission={formData.commission || 0}
             commissionType={formData.commissionType || 'Fixed'}
@@ -416,7 +414,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                 type={formData.type || 'buy'}
                 totalAmount={formData.totalAmount || 0}
                 balance={formData.balance || 0}
-                currency={formData.currency || 'USD'}
+                currency={formData.currency as Currency || 'USD'}
                 createDebt={createDebt}
                 onPaymentsChange={setPayments}
                 onCreateDebtChange={setCreateDebt}
