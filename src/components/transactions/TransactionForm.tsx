@@ -17,23 +17,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
-import { 
-  PlusCircle, 
-  MinusCircle, 
-  Trash, 
-  Save, 
-  Search, 
-  QrCode, 
-  CreditCard, 
-  Wallet, 
-  DollarSign, 
-  Calculator 
-} from 'lucide-react';
+import { Save } from 'lucide-react';
+import BasicInfoSection from './form-sections/BasicInfoSection';
+import PricingSection from './form-sections/PricingSection';
+import ItemsSection from './form-sections/ItemsSection';
+import PaymentsSection from './form-sections/PaymentsSection';
 
 interface TransactionFormProps {
   transaction?: Transaction;
@@ -53,9 +46,9 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   const [formData, setFormData] = useState<Partial<Transaction>>(
     transaction || {
       id: uuidv4(),
-      type: 'Buy',
+      type: 'buy',
       customerName: '',
-      registerType: 'Wholesale',
+      registerType: 'wholesale',
       items: [],
       payments: [],
       totalAmount: 0,
@@ -81,7 +74,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   const [customUnitPrice, setCustomUnitPrice] = useState<number | undefined>(undefined);
   const [createDebt, setCreateDebt] = useState<boolean>(false);
   const [filteredItems, setFilteredItems] = useState<InventoryItem[]>([]);
-  const barcodeInputRef = useRef<HTMLInputElement>(null);
   
   const isEditing = !!transaction;
 
@@ -181,7 +173,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     if (customUnitPrice !== undefined && customUnitPrice > 0) {
       unitPrice = customUnitPrice;
     } else {
-      if (formData.type === 'Buy') {
+      if (formData.type === 'buy') {
         unitPrice = isBars 
           ? calculateBarBuyingPrice(currentSpotPrice, itemWeight, purity as '999.9' | '995')
           : calculateJewelryBuyingPrice(currentSpotPrice, itemWeight, purity, 0, getPurityFactor);
@@ -211,7 +203,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       currency: formData.currency as string
     };
     
-    if (formData.type === 'Sell') {
+    if (formData.type === 'sell') {
       if (inventoryItem.quantity < quantity) {
         toast.error(`Not enough quantity available. Only ${inventoryItem.quantity} in stock.`);
         return;
@@ -341,7 +333,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     const purity = item.purity as GoldPurity;
     
     let calculatedPrice = 0;
-    if (formData.type === 'Buy') {
+    if (formData.type === 'buy') {
       calculatedPrice = isBars 
         ? calculateBarBuyingPrice(currentSpotPrice, itemWeight, purity as '999.9' | '995') 
         : calculateJewelryBuyingPrice(currentSpotPrice, itemWeight, purity, 0, getPurityFactor);
@@ -366,124 +358,30 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
           </div>
         </CardTitle>
       </CardHeader>
+      
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
         <CardContent className="space-y-4 p-4 overflow-y-auto flex-1">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex space-x-2">
-              <div className="space-y-2 flex-1">
-                <Label htmlFor="type">Transaction Type*</Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value: any) => handleChange('type', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Buy">Buy (from customer)</SelectItem>
-                    <SelectItem value="Sell">Sell (to customer)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2 flex-1">
-                <Label htmlFor="registerType">Register*</Label>
-                <Select
-                  value={formData.registerType}
-                  onValueChange={(value: any) => handleChange('registerType', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select register" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Wholesale">Wholesale</SelectItem>
-                    <SelectItem value="Retail">Retail</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="flex space-x-2">
-              <div className="space-y-2 flex-1">
-                <Label htmlFor="customerName">Customer Name*</Label>
-                <Input
-                  id="customerName"
-                  value={formData.customerName || ''}
-                  onChange={(e) => handleChange('customerName', e.target.value)}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2 flex-1">
-                <Label htmlFor="customerPhone">Customer Phone</Label>
-                <Input
-                  id="customerPhone"
-                  value={formData.customerPhone || ''}
-                  onChange={(e) => handleChange('customerPhone', e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
+          <BasicInfoSection
+            type={formData.type || 'buy'}
+            registerType={formData.registerType || 'wholesale'}
+            customerName={formData.customerName || ''}
+            customerPhone={formData.customerPhone || ''}
+            onTypeChange={(value) => handleChange('type', value)}
+            onRegisterTypeChange={(value) => handleChange('registerType', value)}
+            onCustomerNameChange={(value) => handleChange('customerName', value)}
+            onCustomerPhoneChange={(value) => handleChange('customerPhone', value)}
+          />
           
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="currency">Currency*</Label>
-              <Select
-                value={formData.currency}
-                onValueChange={(value: any) => handleChange('currency', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select currency" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD">USD</SelectItem>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                  <SelectItem value="GBP">GBP</SelectItem>
-                  <SelectItem value="CHF">CHF</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="spotPrice">Spot Price*</Label>
-              <Input
-                id="spotPrice"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.spotPriceAtTransaction || currentSpotPrice}
-                onChange={(e) => handleChange('spotPriceAtTransaction', parseFloat(e.target.value))}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="commission">Commission</Label>
-              <div className="flex space-x-2">
-                <Input
-                  id="commission"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.commission || 0}
-                  onChange={(e) => handleChange('commission', parseFloat(e.target.value))}
-                />
-                <Select
-                  value={formData.commissionType}
-                  onValueChange={(value: any) => handleChange('commissionType', value)}
-                >
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Fixed">Fixed</SelectItem>
-                    <SelectItem value="Percentage">Percentage</SelectItem>
-                    <SelectItem value="PerGram">Per Gram</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
+          <PricingSection
+            currency={formData.currency || 'USD'}
+            spotPrice={formData.spotPriceAtTransaction || currentSpotPrice}
+            commission={formData.commission || 0}
+            commissionType={formData.commissionType || 'Fixed'}
+            onCurrencyChange={(value) => handleChange('currency', value)}
+            onSpotPriceChange={(value) => handleChange('spotPriceAtTransaction', value)}
+            onCommissionChange={(value) => handleChange('commission', value)}
+            onCommissionTypeChange={(value) => handleChange('commissionType', value)}
+          />
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-2">
@@ -492,346 +390,38 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
             </TabsList>
             
             <TabsContent value="items" className="space-y-4 pt-4">
-              <div className="flex space-x-2 p-3 border rounded-md bg-secondary/10">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="itemSearch">Search Items</Label>
-                  <div className="flex space-x-2">
-                    <div className="relative flex-1">
-                      <Input
-                        id="itemSearch"
-                        ref={barcodeInputRef}
-                        value={searchText}
-                        onChange={handleSearchChange}
-                        onKeyDown={handleBarcodeScanned}
-                        placeholder="Search by name, ID, or scan barcode"
-                      />
-                      <Button 
-                        type="button" 
-                        size="icon" 
-                        variant="ghost" 
-                        className="absolute right-2 top-1/2 -translate-y-1/2"
-                        onClick={handleSearchByIdOrBarcode}
-                      >
-                        <Search className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <Button type="button" onClick={focusBarcodeInput} variant="outline">
-                      <QrCode className="h-4 w-4 mr-1" /> Scan
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="selectedItem">Select Item</Label>
-                  <Select
-                    value={selectedItemId}
-                    onValueChange={setSelectedItemId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select an item" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredItems.map(item => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.name} - {item.purity} - {item.weight}{item.weightUnit} ({item.quantity} available)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex space-x-2 items-end">
-                  <div className="space-y-2 flex-1">
-                    <Label htmlFor="quantity">Quantity</Label>
-                    <Input
-                      id="quantity"
-                      type="number"
-                      min="1"
-                      value={quantity}
-                      onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                    />
-                  </div>
-
-                  <Button type="button" onClick={addItem} className="mb-0.5">
-                    <PlusCircle className="h-4 w-4 mr-1" /> Add
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-3 border rounded-md bg-secondary/10">
-                <div className="space-y-2">
-                  <Label htmlFor="manualWeight">
-                    Custom Weight (g) <span className="text-xs text-muted-foreground">(Optional)</span>
-                  </Label>
-                  <Input
-                    id="manualWeight"
-                    type="number"
-                    step="0.001"
-                    min="0"
-                    value={manualWeight !== undefined ? manualWeight : ''}
-                    onChange={(e) => {
-                      const value = e.target.value !== '' ? parseFloat(e.target.value) : undefined;
-                      setManualWeight(value);
-                    }}
-                    placeholder="Override weight"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="customPrice">
-                    Custom Unit Price <span className="text-xs text-muted-foreground">(Optional)</span>
-                  </Label>
-                  <Input
-                    id="customPrice"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={customUnitPrice !== undefined ? customUnitPrice : ''}
-                    onChange={(e) => {
-                      const value = e.target.value !== '' ? parseFloat(e.target.value) : undefined;
-                      setCustomUnitPrice(value);
-                    }}
-                    placeholder="Override price"
-                  />
-                </div>
-                
-                <div className="flex items-end">
-                  <Button 
-                    type="button" 
-                    onClick={handleCalculatePrice}
-                    className="flex-1 mb-0.5"
-                    variant="outline"
-                  >
-                    <Calculator className="h-4 w-4 mr-1" /> Calculate Price
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="border rounded-md overflow-hidden">
-                <Table>
-                  <TableHeader className="bg-secondary/50">
-                    <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Purity</TableHead>
-                      <TableHead>Weight</TableHead>
-                      <TableHead>Qty</TableHead>
-                      <TableHead className="text-right">Unit Price</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedItems.length > 0 ? (
-                      selectedItems.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">{item.name}</TableCell>
-                          <TableCell>{item.purity}</TableCell>
-                          <TableCell>
-                            {item.weight} {item.weightUnit}
-                          </TableCell>
-                          <TableCell>{item.quantity}</TableCell>
-                          <TableCell className="text-right">
-                            {item.unitPrice?.toFixed(2)} {item.currency}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {item.totalPrice?.toFixed(2)} {item.currency}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeItem(item.id as string)}
-                            >
-                              <MinusCircle className="h-4 w-4 text-red-500" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
-                          No items added yet. Select an item and add it to the transaction.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+              <ItemsSection
+                selectedItems={selectedItems}
+                filteredItems={filteredItems}
+                selectedItemId={selectedItemId}
+                quantity={quantity}
+                manualWeight={manualWeight}
+                customUnitPrice={customUnitPrice}
+                onSelectedItemChange={setSelectedItemId}
+                onQuantityChange={setQuantity}
+                onManualWeightChange={setManualWeight}
+                onCustomUnitPriceChange={setCustomUnitPrice}
+                onSearchChange={setSearchText}
+                onSearchSubmit={handleSearchByIdOrBarcode}
+                onAddItem={addItem}
+                onRemoveItem={removeItem}
+                onCalculatePrice={handleCalculatePrice}
+                searchText={searchText}
+              />
             </TabsContent>
             
             <TabsContent value="payments" className="space-y-4 pt-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Payment Methods</h3>
-                <div className="flex space-x-2">
-                  <Button type="button" onClick={handleAddFullPayment} variant="outline" size="sm">
-                    <DollarSign className="h-4 w-4 mr-1" /> Full Payment
-                  </Button>
-                  <Button type="button" onClick={addPayment} variant="outline" size="sm">
-                    <PlusCircle className="h-4 w-4 mr-1" /> Add Method
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                {payments.length > 0 ? (
-                  payments.map((payment, index) => (
-                    <div key={index} className="flex items-end gap-2 p-3 border rounded-md bg-secondary/10">
-                      <div className="space-y-2 flex-1">
-                        <Label htmlFor={`payment-method-${index}`}>Method</Label>
-                        <Select
-                          value={payment.method}
-                          onValueChange={(value) => updatePayment(index, 'method', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select method" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Cash">
-                              <span className="flex items-center">
-                                <DollarSign className="h-4 w-4 mr-1" /> Cash
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="Gold">
-                              <span className="flex items-center">
-                                <Wallet className="h-4 w-4 mr-1" /> Gold
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="Credit Card">
-                              <span className="flex items-center">
-                                <CreditCard className="h-4 w-4 mr-1" /> Credit Card
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="Mixed">Mixed</SelectItem>
-                            <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="space-y-2 flex-1">
-                        <Label htmlFor={`payment-amount-${index}`}>Amount</Label>
-                        <Input
-                          id={`payment-amount-${index}`}
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={payment.amount || ''}
-                          onChange={(e) => updatePayment(index, 'amount', parseFloat(e.target.value))}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2 flex-1">
-                        <Label htmlFor={`payment-currency-${index}`}>Currency</Label>
-                        <Select
-                          value={payment.currency}
-                          onValueChange={(value) => updatePayment(index, 'currency', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select currency" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="USD">USD</SelectItem>
-                            <SelectItem value="EUR">EUR</SelectItem>
-                            <SelectItem value="GBP">GBP</SelectItem>
-                            <SelectItem value="CHF">CHF</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      {payment.method === 'Gold' && (
-                        <>
-                          <div className="space-y-2 flex-1">
-                            <Label htmlFor={`payment-gold-weight-${index}`}>Weight</Label>
-                            <Input
-                              id={`payment-gold-weight-${index}`}
-                              type="number"
-                              step="0.001"
-                              min="0"
-                              value={payment.goldWeight || ''}
-                              onChange={(e) => updatePayment(index, 'goldWeight', parseFloat(e.target.value))}
-                            />
-                          </div>
-                          
-                          <div className="space-y-2 flex-1">
-                            <Label htmlFor={`payment-gold-purity-${index}`}>Purity</Label>
-                            <Select
-                              value={payment.goldPurity}
-                              onValueChange={(value) => updatePayment(index, 'goldPurity', value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select purity" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="999.9">999.9</SelectItem>
-                                <SelectItem value="995">995</SelectItem>
-                                <SelectItem value="22K">22K</SelectItem>
-                                <SelectItem value="21K">21K</SelectItem>
-                                <SelectItem value="18K">18K</SelectItem>
-                                <SelectItem value="14K">14K</SelectItem>
-                                <SelectItem value="9K">9K</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </>
-                      )}
-                      
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removePayment(index)}
-                        className="mb-0.5"
-                      >
-                        <Trash className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-4 text-muted-foreground border rounded-md">
-                    No payments added yet. Add a payment method to complete the transaction.
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex items-center space-x-2 mt-4">
-                <Checkbox 
-                  id="createDebt" 
-                  checked={createDebt} 
-                  onCheckedChange={(checked) => setCreateDebt(checked === true)} 
-                />
-                <Label htmlFor="createDebt" className="cursor-pointer">
-                  {formData.type === 'Buy' ? 
-                    "Create debt record (we owe the supplier)" : 
-                    "Create debt record (customer owes us)"
-                  }
-                </Label>
-              </div>
-              
-              <div className="mt-4 p-4 border rounded-md bg-secondary/20">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Amount</p>
-                    <p className="text-xl font-semibold">
-                      {formData.totalAmount?.toFixed(2) || '0.00'} {formData.currency}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Paid Amount</p>
-                    <p className="text-xl font-semibold">
-                      {payments.reduce((sum, p) => sum + (p.amount || 0), 0).toFixed(2)} {formData.currency}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Remaining Balance</p>
-                    <p className={`text-xl font-semibold ${formData.balance === 0 ? 'text-green-500' : 'text-amber-500'}`}>
-                      {formData.balance?.toFixed(2) || '0.00'} {formData.currency}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <PaymentsSection
+                payments={payments}
+                type={formData.type || 'buy'}
+                totalAmount={formData.totalAmount || 0}
+                balance={formData.balance || 0}
+                currency={formData.currency || 'USD'}
+                createDebt={createDebt}
+                onPaymentsChange={setPayments}
+                onCreateDebtChange={setCreateDebt}
+                onAddFullPayment={handleAddFullPayment}
+              />
             </TabsContent>
           </Tabs>
           
@@ -846,7 +436,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
           </div>
         </CardContent>
         
-        <CardFooter className="flex justify-between bg-secondary/30 border-t p-4 sticky bottom-0 z-10">
+        <CardFooter className="flex justify-between bg-muted/30 border-t p-4 sticky bottom-0 z-10">
           <Button variant="outline" onClick={onCancel} type="button">
             Cancel
           </Button>

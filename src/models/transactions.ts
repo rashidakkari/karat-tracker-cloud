@@ -1,9 +1,7 @@
 
-import { InventoryItem } from './inventory';
-
-export type TransactionType = 'sale' | 'purchase' | 'exchange' | 'Buy' | 'Sell' | 'Expense' | 'Repair';
-export type PaymentMethod = 'cash' | 'credit_card' | 'bank_transfer' | 'check' | 'other' | 'Cash' | 'Gold' | 'Mixed' | 'Credit' | 'Bank Transfer' | 'Other';
-export type TransactionStatus = 'completed' | 'pending' | 'cancelled' | 'Completed' | 'Pending';
+export type TransactionType = 'buy' | 'sell';
+export type PaymentMethod = 'Cash' | 'Gold' | 'Mixed' | 'Credit Card' | 'Bank Transfer' | 'Other';
+export type TransactionStatus = 'Completed' | 'Pending';
 
 export interface TransactionItem {
   id?: string;
@@ -24,7 +22,7 @@ export interface TransactionItem {
 }
 
 export interface Payment {
-  method: string;
+  method: PaymentMethod;
   amount: number;
   currency: string;
   goldWeight?: number;
@@ -37,8 +35,8 @@ export interface Transaction {
   customerName: string;
   customerContact?: string;
   customerPhone?: string;
-  registerType?: string;
-  date: string; // ISO date string
+  registerType: 'wholesale' | 'retail';
+  dateTime: string;
   items: TransactionItem[];
   totalAmount: number;
   tax?: number;
@@ -46,9 +44,7 @@ export interface Transaction {
   paymentMethod: PaymentMethod;
   status: TransactionStatus;
   notes?: string;
-  profit?: number; // For sale transactions
-  
-  // Additional properties needed by components
+  profit?: number;
   payments?: Payment[];
   balance?: number;
   currency?: string;
@@ -64,7 +60,7 @@ export interface Expense {
   id: string;
   category: string;
   amount: number;
-  date: string; // ISO date string
+  date: string;
   description: string;
   paymentMethod: PaymentMethod;
   recurring?: boolean;
@@ -76,8 +72,8 @@ export interface Debt {
   personName: string;
   contactInfo?: string;
   amount: number;
-  date: string; // ISO date string
-  dueDate?: string; // ISO date string
+  date: string;
+  dueDate?: string;
   description: string;
   status: 'pending' | 'partially_paid' | 'paid';
   partialPayments?: {

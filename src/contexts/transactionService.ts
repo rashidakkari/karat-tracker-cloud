@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { formatTransaction } from '@/services/transactions/transactionUtils';
 import { updateInventoryForTransaction } from '@/services/transactions/inventoryUpdate';
 import { updateRegisterBalance, createCustomerDebt, verifyInventoryAvailability } from '@/utils/inventoryUtils';
+import { convertToGrams, getPurityFactor } from '@/utils/goldCalculations';
 
 export const createTransactionService = (
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>,
@@ -182,12 +183,14 @@ export const createTransactionService = (
     commissionRate: number,
     commissionType: 'percentage' | 'flat' | 'per_gram'
   ) => {
+    const { calculateTransactionPrice } = require('@/utils/goldCalculations');
+    
     return calculateTransactionPrice(
       type,
-      category as 'bars' | 'coins' | 'jewelry',
+      category,
       spotPrice,
       weight,
-      weightUnit as 'g' | 'oz' | 'tola' | 'baht',
+      weightUnit,
       purity,
       commissionRate,
       commissionType
